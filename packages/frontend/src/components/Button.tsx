@@ -23,7 +23,7 @@ export function Button({ text, disabled = false, isLoading = false, onClickFunct
         <button
             onClick={onClickFunction}
             disabled={disabled}
-            className="cursor-pointer w-full p-3 bg-kiwi-middle-black rounded-lg border border-solid text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-black disabled:cursor-default transition-colors duration-200 flex flex-row gap-2 justify-center items-center"
+            className="whitespace-nowrap cursor-pointer w-full p-3 bg-kiwi-middle-black rounded-lg border border-solid text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-black disabled:cursor-default transition-colors duration-200 flex flex-row gap-2 justify-center items-center"
         >
             {isLoading && (
                 <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">

@@ -7,8 +7,6 @@
  * same construction code as authenticated endpoints.
  */
 
-const API_BASE_URL: string = import.meta.env.VITE_API_URL;
-
 type HttpMethod = "GET" | "POST" | "PATCH";
 
 export interface ApiFetchOptions {
@@ -63,5 +61,5 @@ export async function apiFetch(endpoint: string, options: ApiFetchOptions = {}):
         requestInit.body = JSON.stringify(options.body);
     }
 
-    return fetch(`${API_BASE_URL}${endpoint}${queryString}`, requestInit);
+    return fetch(`${endpoint}${queryString}`, requestInit);
 }

@@ -15,8 +15,7 @@ export default function LandingSignup({ setOutcome }: LandingSignupProps) {
 
     const postEmail = async (data: LandingSignupRequest): Promise<WaitlistOutcome> => {
 
-        const apiURL: string = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${apiURL}/api/waitlist/add`, {
+        const response = await fetch('/api/waitlist/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -61,9 +60,9 @@ export default function LandingSignup({ setOutcome }: LandingSignupProps) {
     return (
         <div>
             <form onSubmit={handleSubmit}>
-                <div className="flex flex-col md:flex-row items-center gap-3">
+                <div className="flex flex-row items-center gap-3">
                     <input
-                        className="w-full sm:w-80 border rounded-lg p-3"
+                        className="w-40 md:w-80 border rounded-lg p-3"
                         type="email"
                         id="email"
                         name="email"
@@ -72,7 +71,7 @@ export default function LandingSignup({ setOutcome }: LandingSignupProps) {
                         disabled={isDisabled}
                         autoFocus={true}
                     />
-                    <div className="w-64">
+                    <div className="md:w-64 w-48">
                         <Button text="Add me to the waitlist" disabled={isDisabled} isLoading={isDisabled} />
                     </div>
                 </div>

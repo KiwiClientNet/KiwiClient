@@ -9,12 +9,11 @@ type HeroIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 export default function Landing() {
     const [outcome, setOutcome] = useState<WaitlistOutcome>('IDLE');
-    const apiURL: string = import.meta.env.VITE_API_URL;
     let count: string;
 
     const { data, isPending, isError } = useQuery({
         queryKey: ['count'],
-        queryFn: () => fetch(`${apiURL}/api/waitlist/count`).then(response => response.json()),
+        queryFn: () => fetch('/api/waitlist/count').then(response => response.json()),
     })
 
     if (isPending || isError) {
@@ -53,8 +52,8 @@ export default function Landing() {
     }, [outcome]);
 
     return (
-        <div className={`transition-opacity duration-300 ${(!isPending && !isError) ? "opacity-100" : "opacity-0"}`}>
-            <div className="min-h-dvh w-full grid place-items-center px-4 py-10 sm:pt-16 sm:pb-32">
+        <div className={`min-h-dvh sm:h-dvh sm:overflow-hidden transition-opacity duration-300 ${(!isPending && !isError) ? "opacity-100" : "opacity-0"}`}>
+            <div className="w-full min-h-dvh sm:h-full grid place-items-center px-4 py-8 sm:pt-12 sm:pb-24">
                 <div className="w-full max-w-6xl flex flex-col items-center font-bold antialiased">
                     <div className="flex flex-col sm:flex-row items-center">
                     <ReverseLogo className="w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64" />
@@ -62,7 +61,7 @@ export default function Landing() {
                 </div>
                 <h2 className="text-2xl sm:text-3xl lg:text-5xl mt-3 text-center">Your server. Your client. Your email.</h2>
                 <h3 className="text-lg sm:text-2xl lg:text-3xl mt-4 text-center max-w-4xl"> An open source email client for self-hosted mail servers — built for speed, simplicity, and privacy </h3>
-                <div className="flex flex-col sm:flex-row gap-6 mt-6 items-center opacity-80 text-center text-sm sm:text-base">
+                <div className="flex flex-col sm:flex-row md:gap-6 sm:gap-1 mt-6 items-center opacity-80 text-center text-sm sm:text-base">
                     <span>Open Source</span>
                     <span>No Tracking</span>
                     <span>Lightweight & Fast</span>
@@ -98,7 +97,10 @@ export default function Landing() {
 
                     <span>View on GitHub</span>
                 </a>
-                <div className={`flex flex-row items-center transition-opacity duration-300 ${outcome !== "IDLE" ? "opacity-100" : "opacity-0"}`}>
+                <div
+                    aria-live="polite"
+                    className={`flex flex-row items-center min-h-16 transition-opacity duration-300 ${outcome !== "IDLE" ? "opacity-100" : "opacity-0"}`}
+                >
                     {returnOutcomeMessage()}
                 </div>
                 </div>
