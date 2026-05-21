@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Allow: /terms-of-service
+Allow: /privacy-policy
 Disallow: /mail
 Disallow: /login
 Disallow: /unsubscribe
