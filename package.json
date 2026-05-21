@@ -3,6 +3,7 @@
     "private": true,
     "packageManager": "pnpm@10.31.0",
     "scripts": {
+        "prepare": "git config core.hooksPath .githooks || true",
         "dev": "pnpm --parallel -r run dev",
         "dev:frontend": "pnpm --filter frontend dev",
         "dev:backend": "pnpm --filter backend dev",
