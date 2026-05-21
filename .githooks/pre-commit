@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Pre-commit hook: scan staged changes with gitleaks before each commit.
+#
+# Activate this hook for your clone:
+#   git config core.hooksPath .githooks
+#
+# Bypass (use sparingly, e.g. when you know a match is a placeholder):
+#   git commit --no-verify
+
+set -euo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "gitleaks not installed. Install: https://github.com/gitleaks/gitleaks"
+    echo "Skipping secret scan. Commit allowed."
+    exit 0
+fi
+
+gitleaks git --staged --redact --verbose --no-banner

@@ -1,0 +1,38 @@
+{
+    "name": "backend",
+    "version": "0.0.1",
+    "description": "",
+    "private": true,
+    "scripts": {
+        "dev": "GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo dev) tsx watch src/index.ts",
+        "build": "tsc -b && cp -r src/emails dist/emails",
+        "start": "node dist/index.js"
+    },
+    "keywords": [],
+    "author": "",
+    "type": "module",
+    "dependencies": {
+        "@KiwiClient/shared": "workspace:*",
+        "better-sqlite3": "^12.10.0",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.6",
+        "dotenv": "^17.3.1",
+        "express": "^5.2.1",
+        "express-rate-limit": "^8.5.1",
+        "google-auth-library": "^10.6.2",
+        "helmet": "^8.1.0",
+        "imapflow": "^1.2.12",
+        "jsonwebtoken": "^9.0.3",
+        "resend": "^6.12.3"
+    },
+    "devDependencies": {
+        "@types/better-sqlite3": "^7.6.13",
+        "@types/cookie-parser": "^1.4.10",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^25.3.3",
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
+    }
+}

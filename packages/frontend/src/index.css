@@ -1,0 +1,87 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@font-face {
+    font-family: 'Quicksand';
+    src: url('./assets/fonts/Quicksand-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Quicksand';
+    src: url('./assets/fonts/Quicksand-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+:root {
+    --kiwi-black: #000000;
+    --kiwi-dark-black: #0A0A0A;
+    --kiwi-middle-black: #0E0E0E;
+    --kiwi-light-black: #303030;
+    --kiwi-dark-grey: #5e5e5e;
+    --kiwi-middle-grey: #919191;
+    --kiwi-light-grey: #c6c6c6;
+    --kiwi-white: #ffffff;
+    --kiwi-success: #283429;
+    --kiwi-failure: #7E262F;
+    --kiwi-info: #B58B00;
+}
+
+@theme {
+    --font-sans: 'Quicksand', ui-sans-serif, system-ui, sans-serif;
+
+    --color-kiwi-black: var(--kiwi-black);
+    --color-kiwi-dark-black: var(--kiwi-dark-black);
+    --color-kiwi-middle-black: var(--kiwi-middle-black);
+    --color-kiwi-light-black: var(--kiwi-light-black);
+    --color-kiwi-dark-grey: var(--kiwi-dark-grey);
+    --color-kiwi-middle-grey: var(--kiwi-middle-grey);
+    --color-kiwi-light-grey: var(--kiwi-light-grey);
+    --color-kiwi-white: var(--kiwi-white);
+    --color-kiwi-success: var(--kiwi-success);
+    --color-kiwi-failure: var(--kiwi-failure);
+    --color-kiwi-info: var(--kiwi-info);
+}
+
+@layer base {
+    body {
+        @apply bg-kiwi-dark-black text-kiwi-white antialiased;
+        font-family: var(--font-sans);
+    }
+}
+
+.kiwi-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
+}
+
+.kiwi-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.kiwi-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 100, 100, 0.25);
+    border-radius: 9999px;
+}
+
+.kiwi-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+        /* Chrome, Safari, Opera */
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+}

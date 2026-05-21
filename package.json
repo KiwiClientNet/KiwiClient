@@ -1,0 +1,28 @@
+{
+    "name": "KiwiClient",
+    "private": true,
+    "packageManager": "pnpm@10.31.0",
+    "scripts": {
+        "dev": "pnpm --parallel -r run dev",
+        "dev:frontend": "pnpm --filter frontend dev",
+        "dev:backend": "pnpm --filter backend dev",
+        "build": "pnpm -r run build",
+        "build:frontend": "pnpm --filter frontend build",
+        "build:backend": "pnpm --filter backend build",
+        "cap:sync": "pnpm build:frontend && pnpm --filter frontend cap:sync",
+        "cap:android": "pnpm --filter frontend cap:android"
+    },
+    "devDependencies": {
+        "knip": "^6.13.1"
+    },
+    "pnpm": {
+        "overrides": {
+            "path-to-regexp": "^8.4.0",
+            "nodemailer": "^8.0.5"
+        },
+        "onlyBuiltDependencies": [
+            "better-sqlite3"
+        ]
+    }
+
+}

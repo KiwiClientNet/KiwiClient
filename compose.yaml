@@ -1,0 +1,50 @@
+  services:
+    backend:
+      image: kiwiclient-backend:test
+      container_name: kiwiclient-backend
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:3001:3001"
+
+      env_file:
+        - .env.production
+
+      volumes:
+        - ./data:/data
+
+      user: "7777:7777"
+      read_only: true
+
+      tmpfs:
+        - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+
+      cap_drop:
+        - ALL
+
+      security_opt:
+        - no-new-privileges:true
+
+      mem_limit: 512m
+      mem_reservation: 128m
+      cpus: "1.0"
+      pids_limit: 128
+
+      healthcheck:
+        test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health"]
+        interval: 30s
+        timeout: 5s
+        retries: 3
+        start_period: 15s
+
+      logging:
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "7"
+      networks:
+        - kiwiclient
+
+  networks:
+    kiwiclient:
+      name: kiwiclient
+      driver: bridge

@@ -1,0 +1,11 @@
+{
+    "workspaces": {
+        "packages/frontend": {},
+        "packages/backend": {},
+        "packages/shared": {}
+    },
+    "ignoreDependencies": [
+        "@capacitor/android",
+        "@capacitor/core"
+    ]
+}
