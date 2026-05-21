@@ -16,13 +16,15 @@ interface ButtonProps {
     onClickFunction?: MouseEventHandler<HTMLButtonElement>;
     inlineImageSource?: string;
     inlineImageAltText?: string;
+    title?: string;
 }
 
-export function Button({ text, disabled = false, isLoading = false, onClickFunction, inlineImageSource = "", inlineImageAltText = "" }: ButtonProps) {
+export function Button({ text, disabled = false, isLoading = false, onClickFunction, inlineImageSource = "", inlineImageAltText = "", title }: ButtonProps) {
     return (
         <button
             onClick={onClickFunction}
             disabled={disabled}
+            title={title}
             className="whitespace-nowrap cursor-pointer w-full p-3 bg-kiwi-middle-black rounded-lg border border-solid text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-black disabled:cursor-default transition-colors duration-200 flex flex-row gap-2 justify-center items-center"
         >
             {isLoading && (

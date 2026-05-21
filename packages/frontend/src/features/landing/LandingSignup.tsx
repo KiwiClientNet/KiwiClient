@@ -72,7 +72,7 @@ export default function LandingSignup({ setOutcome }: LandingSignupProps) {
                         autoFocus={true}
                     />
                     <div className="md:w-64 w-48">
-                        <Button text="Add me to the waitlist" disabled={isDisabled} isLoading={isDisabled} />
+                        <Button text="Add me to the waitlist" disabled={isDisabled} isLoading={isDisabled} title="Submits your email to the waitlist" />
                     </div>
                 </div>
             </form>
