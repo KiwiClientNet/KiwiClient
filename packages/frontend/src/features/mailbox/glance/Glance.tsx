@@ -146,7 +146,7 @@ interface GlanceLayoutProps {
  */
 function GlanceLayout({ toolbar, children }: GlanceLayoutProps) {
     return (
-        <div className="row-span-12 col-span-5 mr-1 flex flex-col min-h-0">
+        <div className="h-full w-full flex flex-col min-h-0">
             {toolbar}
             {children}
         </div>

@@ -8,6 +8,7 @@
 
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AuthContext } from "../../../auth/AuthContext";
 import { BorderlessButton } from "../../../components/Button";
 import { ReverseLogo } from "../../../components/Logo";
@@ -19,9 +20,11 @@ interface SidebarProps {
     mailboxTree: MailboxTreeNode[];
     selectedMailboxPath: string;
     onSelectMailbox: (selection: MailboxSelection) => void;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
-export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox }: SidebarProps) {
+export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose }: SidebarProps) {
     const { logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -30,12 +33,37 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox }: S
     };
 
     return (
-        <div className="relative flex h-full w-full max-w-56 flex-col">
-            <div className="h-9/10 relative flex w-full flex-col">
-                <div className="flex justify-center p-4">
-                    <ReverseLogo width={100} height={100} />
+        <>
+            {/* Backdrop — only visible on mobile when drawer is open */}
+            <div
+                onClick={onClose}
+                aria-hidden="true"
+                className={`md:hidden fixed inset-0 z-30 bg-kiwi-black transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            />
+
+            <aside
+                className={`
+                    fixed md:relative inset-y-0 left-0 z-40
+                    flex h-dvh w-64 md:w-56 flex-col
+                    bg-kiwi-black md:bg-transparent
+                    transform transition-transform duration-200
+                    ${isOpen ? "translate-x-0" : "-translate-x-full"}
+                    md:translate-x-0
+                `}
+            >
+                <div className="flex items-center justify-between p-4 md:justify-center">
+                    <ReverseLogo className="w-16 h-16 md:w-24 md:h-24" />
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close menu"
+                        className="md:hidden p-2 rounded-lg hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors"
+                    >
+                        <XMarkIcon className="size-6" />
+                    </button>
                 </div>
-                <nav className="w-9/10 max-w-full justify-center-safe overflow-scroll no-scrollbar">
+
+                <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
                     <ul className="text-sm">
                         {mailboxTree.map(node => (
                             <SidebarTreeNode
@@ -47,12 +75,13 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox }: S
                         ))}
                     </ul>
                 </nav>
-            </div>
-            <div className="flex w-full absolute bottom-0 items-center ml-2 pr-2 mb-2 gap-2">
-                <BorderlessButton text="Settings?" onClickFunction={handleLogout} />
-                <BorderlessButton text="Logout" onClickFunction={handleLogout} />
-            </div>
-        </div>
+
+                <div className="flex w-full items-center gap-2 px-2 pb-2 pt-2 border-t border-kiwi-light-black md:border-0">
+                    <BorderlessButton text="Settings?" onClickFunction={handleLogout} />
+                    <BorderlessButton text="Logout" onClickFunction={handleLogout} />
+                </div>
+            </aside>
+        </>
     );
 }
 

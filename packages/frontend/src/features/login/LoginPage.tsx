@@ -25,24 +25,24 @@ export function LoginPage() {
     }, [accessToken, loading, navigate]);
 
     return (
-        <div className="min-h-screen flex flex-col lg:flex-row">
-            <div className="w-full lg:w-6/12 p-16 flex flex-col justify-center">
-                <nav className="mb-16">
-                    <ReverseLogo width={400} height={400} />
+        <div className="min-h-dvh flex flex-col lg:flex-row">
+            <div className="w-full lg:w-1/2 px-6 pt-8 pb-4 sm:px-12 sm:pt-12 lg:p-16 flex flex-col justify-center items-center lg:items-start text-center lg:text-left">
+                <nav className="mb-4 sm:mb-8 lg:mb-12">
+                    <ReverseLogo className="w-24 h-24 sm:w-40 sm:h-40 lg:w-72 lg:h-72" />
                 </nav>
 
-                <div>
-                    <h1 className="text-4xl lg:text-6xl font-bold">KiwiClient</h1>
-                    <h1 className="text-3xl lg:text-5xl font-bold">Your New Email Client</h1>
-                    <div className="w-16 h-2 bg-kiwi-white my-6" />
-                    <p className="text-xl max-w-xl">An email client to receive, organise, and send emails.</p>
+                <div className="max-w-xl">
+                    <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold">KiwiClient</h1>
+                    <h2 className="text-xl sm:text-2xl lg:text-4xl font-bold mt-1">Your New Email Client</h2>
+                    <div className="w-12 h-1.5 bg-kiwi-white my-4 sm:my-6 mx-auto lg:mx-0" />
+                    <p className="text-base sm:text-lg lg:text-xl">An email client to receive, organise, and send emails.</p>
                 </div>
             </div>
 
-            <div className="w-full lg:w-6/12 p-16 flex flex-col justify-center mx-auto md:max-w-xl lg:max-w-2xl">
-                <div className="rounded-2xl shadow-xl border-solid p-4 border-2">
+            <div className="w-full lg:w-1/2 px-6 pb-10 sm:px-12 sm:pb-16 lg:p-16 flex flex-col justify-center items-center">
+                <div className="w-full max-w-md lg:max-w-lg rounded-2xl shadow-xl border-2 border-solid p-6 sm:p-8">
                     <LoginForm isDisabled={isLoginFormDisabled} setIsDisabled={setIsLoginFormDisabled} />
-                    <hr className="border-t-2 mt-6 mb-6" />
+                    <hr className="border-t-2 my-6" />
                     <GoogleLogin isDisabled={isLoginFormDisabled} setIsDisabled={setIsLoginFormDisabled} />
                 </div>
             </div>
