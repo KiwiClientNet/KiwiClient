@@ -19,14 +19,14 @@ export function Emailbox({ onBack }: EmailboxProps) {
     const selected = useSelectedEmailStore(state => state.selected);
 
     return (
-        <div className="h-full w-full rounded-none md:rounded-3xl bg-kiwi-black p-2 flex flex-col min-h-0">
+        <div className="h-full w-full rounded-none lg:rounded-3xl bg-kiwi-black p-2 flex flex-col min-h-0">
             <div className="flex items-center gap-2 rounded-3xl bg-kiwi-black p-2 shrink-0">
                 {selected && onBack && (
                     <button
                         type="button"
                         onClick={onBack}
                         aria-label="Back to inbox"
-                        className="md:hidden p-2 -ml-1 rounded-lg hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors"
+                        className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors"
                     >
                         <ArrowLeftIcon className="size-6" />
                     </button>

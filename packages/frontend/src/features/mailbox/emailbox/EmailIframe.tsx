@@ -33,10 +33,15 @@ function buildIframeDocument(bodyContent: string): string {
 <meta charset="utf-8" />
 <style>
 html { height: 100%; overflow: hidden; }
-body { margin: 0; padding: 8px; height: 100%; overflow-y: auto; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: rgba(100, 100, 100, 0.3) transparent; }
+body { margin: 0; padding: 8px; height: 100%; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: rgba(100, 100, 100, 0.3) transparent; word-wrap: break-word; }
 body::-webkit-scrollbar { width: 6px; }
 body::-webkit-scrollbar-thumb { background-color: rgba(100, 100, 100, 0.25); border-radius: 9999px; }
 body::-webkit-scrollbar-track { background: transparent; }
+img, video { max-width: 100% !important; height: auto !important; }
+table { max-width: 100% !important; table-layout: fixed !important; }
+td, th { word-break: break-word; overflow-wrap: anywhere; }
+pre, code { white-space: pre-wrap; word-break: break-word; }
+* { max-width: 100% !important; box-sizing: border-box; }
 </style>
 </head>
 <body>

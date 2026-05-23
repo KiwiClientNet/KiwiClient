@@ -21,6 +21,7 @@ interface GlanceToolbarProps {
     onToggleSelectAll: () => void;
     selectedUniqueIds: Set<number>;
     specialTrashFolderPath?: string;
+    clearGlanceSelection?: () => void;
 }
 
 export function GlanceToolbar({
@@ -29,7 +30,8 @@ export function GlanceToolbar({
     areAllSelected,
     onToggleSelectAll,
     selectedUniqueIds,
-    specialTrashFolderPath = undefined
+    specialTrashFolderPath = undefined,
+    clearGlanceSelection = undefined
 }: GlanceToolbarProps) {
     const flagsMutation = useMessageFlagsMutation({ mailboxPath: selectedMailboxPath });
     const moveMutation = useMessageMoveMutation({ mailboxPath: selectedMailboxPath });
@@ -47,10 +49,12 @@ export function GlanceToolbar({
         if (selectedUniqueIds.size === 0) {
             return;
         }
-        console.log(mailboxPathTarget);
 
         // The emails all selected should be in the same mailbox already and can only accept one source anyway
         moveMutation.mutate({ uniqueIds: Array.from(selectedUniqueIds), mailboxPathSource: selectedMailboxPath, mailboxPathTarget });
+        if (clearGlanceSelection) {
+            clearGlanceSelection();
+        }
     };
 
     return (
@@ -75,7 +79,7 @@ export function GlanceToolbar({
                 <ToolbarIconButton title="Unstar" onClick={() => runBulkFlagUpdate([], [FLAGGED_FLAG])}>
                     <StarIconOutline className="size-5" />
                 </ToolbarIconButton>
-                <ToolbarIconButton title="Trash" onClick={() => { specialTrashFolderPath ? runBulkMove(specialTrashFolderPath) : console.log(specialTrashFolderPath) }}>
+                <ToolbarIconButton title="Trash" onClick={() => { specialTrashFolderPath ? runBulkMove(specialTrashFolderPath) : { /* Don't do anything */ } }}>
                     <TrashIcon className="size-5" />
                 </ToolbarIconButton>
                 <span className="text-xs opacity-70 ml-1 w-20 inline-block">

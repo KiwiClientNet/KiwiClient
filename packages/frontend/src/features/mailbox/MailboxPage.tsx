@@ -128,11 +128,11 @@ export function MailboxPage() {
                     ====&gt; Message search div to be implemented here
                 </div>
 
-                <div className="flex-1 min-h-0 flex flex-col md:flex-row md:m-3 md:p-2 md:bg-kiwi-middle-black md:rounded-3xl">
-                    <div className={`${mobileView === "glance" ? "flex" : "hidden"} md:flex flex-col flex-1 md:flex-none md:w-lg lg:w-xl xl:w-2xl min-h-0 md:mr-1`}>
+                <div className="flex-1 min-h-0 flex flex-col lg:flex-row lg:gap-2 lg:m-3 lg:p-2 lg:bg-kiwi-middle-black lg:rounded-3xl">
+                    <div className={`${mobileView === "glance" ? "flex" : "hidden"} lg:flex flex-col flex-1 lg:flex-none lg:w-md xl:w-lg 2xl:w-xl min-h-0`}>
                         <Glance selectedMailbox={selectedMailbox} specialTrashFolderPath={specialTrashFolderPath} />
                     </div>
-                    <div className={`${mobileView === "email" ? "flex" : "hidden"} md:flex flex-col flex-1 min-h-0 md:ml-1`}>
+                    <div className={`${mobileView === "email" ? "flex" : "hidden"} lg:flex flex-col flex-1 min-h-0`}>
                         <Emailbox onBack={handleBackToGlance} />
                     </div>
                 </div>

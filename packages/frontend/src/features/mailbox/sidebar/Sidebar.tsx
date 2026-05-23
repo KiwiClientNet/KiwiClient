@@ -66,15 +66,18 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
 
                 <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
                     <ul className="text-sm">
-                        {mailboxTree.map(node => (
-                            <SidebarTreeNode
+                        {mailboxTree.map(node => {
+                            if (node.mailbox.specialUse === "\\Trash") {
+                                setSpecialTrashFolderPath(node.mailbox.path);
+                            }
+
+                            return (<SidebarTreeNode
                                 key={node.mailbox.path}
                                 node={node}
                                 selectedMailboxPath={selectedMailboxPath}
                                 onSelectMailbox={onSelectMailbox}
-                                setSpecialTrashFolderPath={setSpecialTrashFolderPath}
-                            />
-                        ))}
+                            />);
+                        })}
                     </ul>
                 </nav>
 
@@ -91,7 +94,6 @@ interface SidebarTreeNodeProps {
     node: MailboxTreeNode;
     selectedMailboxPath: string;
     onSelectMailbox: (selection: MailboxSelection) => void;
-    setSpecialTrashFolderPath: (mailboxPath: string) => void;
 }
 
 /**
@@ -100,16 +102,12 @@ interface SidebarTreeNodeProps {
  * Tracks its own expand/collapse state per node because expansion is a UI
  * concern that does not need to live in the parent page's state.
  */
-function SidebarTreeNode({ node, selectedMailboxPath, onSelectMailbox, setSpecialTrashFolderPath }: SidebarTreeNodeProps) {
+function SidebarTreeNode({ node, selectedMailboxPath, onSelectMailbox }: SidebarTreeNodeProps) {
     const [isExpanded, setIsExpanded] = useState(true);
 
     const isSelected = node.mailbox.path === selectedMailboxPath;
     const hasChildren = node.children.length > 0;
     const isSelectable = !node.mailbox.flags.includes("\\Noselect");
-
-    if (node.mailbox.specialUse === "\\Trash") {
-        setSpecialTrashFolderPath(node.mailbox.path);
-    }
 
     const handleFolderClick = () => {
         if (!isSelectable) {
@@ -149,7 +147,6 @@ function SidebarTreeNode({ node, selectedMailboxPath, onSelectMailbox, setSpecia
                         node={childNode}
                         selectedMailboxPath={selectedMailboxPath}
                         onSelectMailbox={onSelectMailbox}
-                        setSpecialTrashFolderPath={setSpecialTrashFolderPath}
                     />
                 ))}
             </ul>

@@ -87,6 +87,7 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
                     onToggleSelectAll={handleToggleSelectAll}
                     selectedUniqueIds={selection.selectedUniqueIds}
                     specialTrashFolderPath={specialTrashFolderPath}
+                    clearGlanceSelection={() => { selection.clearSelection() }}
                 />
             }
         >

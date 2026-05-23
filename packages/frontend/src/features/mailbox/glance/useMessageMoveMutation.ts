@@ -22,13 +22,12 @@ export function useMessageMoveMutation({ mailboxPath }: UseMessageMoveMutationAr
     return useMutation<void, Error, MoveMutationVariables, { previousData?: CachedGlanceData }>({
         mutationFn: ({ mailboxPathSource, mailboxPathTarget, uniqueIds }) => patchMoveMessages({ authFetch, mailboxPathSource, mailboxPathTarget, uniqueIds }),
 
-        onMutate: async ({ uniqueIds, mailboxPathSource, mailboxPathTarget }) => {
+        onMutate: async ({ uniqueIds }) => {
             // Cancel any queries that have already gone out
             const queryKey = glanceQueryKey(mailboxPath);
             await queryClient.cancelQueries({ queryKey });
 
             const previousData = queryClient.getQueryData<CachedGlanceData>(queryKey);
-            const targetUidSet = new Set(uniqueIds);
 
             queryClient.setQueryData<CachedGlanceData>(queryKey, oldData => {
                 if (!oldData) {
@@ -39,17 +38,10 @@ export function useMessageMoveMutation({ mailboxPath }: UseMessageMoveMutationAr
                     ...oldData,
                     pages: oldData.pages.map(page => ({
                         ...page,
-                        items: page.items.map(item => {
-                            if (!targetUidSet.has(item.uniqueId)) {
-                                return item;
-                            }
-
-                            if (mailboxPathTarget === mailboxPathSource) {
-                                return item;
-                            }
-
-                            return { ...item, mailboxPath: mailboxPathTarget };
-                        })
+                        // Need to remove it form the current list of glance items, check to see
+                        // if the current array of the items we want to get rid of contain each 
+                        // element and return the negation to signal its removal
+                        items: page.items.filter(item => !uniqueIds.includes(item.uniqueId))
                     }))
                 };
 
