@@ -52,6 +52,7 @@ export function MailboxPage() {
     const [mobileView, setMobileView] = useState<"glance" | "email">("glance");
     const selectedEmail = useSelectedEmailStore(state => state.selected);
     const clearSelectedEmail = useSelectedEmailStore(state => state.clear);
+    const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined);
 
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: ["mailboxes"],
@@ -107,6 +108,7 @@ export function MailboxPage() {
                 onSelectMailbox={handleSelectMailbox}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
+                setSpecialTrashFolderPath={setSpecialTrashFolderPath}
             />
 
             <div className="flex flex-col flex-1 min-w-0 h-dvh">
@@ -127,10 +129,10 @@ export function MailboxPage() {
                 </div>
 
                 <div className="flex-1 min-h-0 flex flex-col md:flex-row md:m-3 md:p-2 md:bg-kiwi-middle-black md:rounded-3xl">
-                    <div className={`${mobileView === "glance" ? "flex" : "hidden"} md:flex flex-col flex-1 md:flex-5 min-h-0 md:mr-1`}>
-                        <Glance selectedMailbox={selectedMailbox} />
+                    <div className={`${mobileView === "glance" ? "flex" : "hidden"} md:flex flex-col flex-1 md:flex-none md:w-lg lg:w-xl xl:w-2xl min-h-0 md:mr-1`}>
+                        <Glance selectedMailbox={selectedMailbox} specialTrashFolderPath={specialTrashFolderPath} />
                     </div>
-                    <div className={`${mobileView === "email" ? "flex" : "hidden"} md:flex flex-col flex-1 md:flex-7 min-h-0 md:ml-1`}>
+                    <div className={`${mobileView === "email" ? "flex" : "hidden"} md:flex flex-col flex-1 min-h-0 md:ml-1`}>
                         <Emailbox onBack={handleBackToGlance} />
                     </div>
                 </div>

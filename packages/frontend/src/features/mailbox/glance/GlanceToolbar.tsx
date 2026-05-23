@@ -7,11 +7,12 @@
  * API call covering every selected UID.
  */
 
-import { EnvelopeIcon, EnvelopeOpenIcon, StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
+import { EnvelopeIcon, EnvelopeOpenIcon, TrashIcon, StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { SEEN_FLAG, FLAGGED_FLAG } from "@KiwiClient/shared";
 import { Checkbox } from "../../../components/Checkbox";
 import { useMessageFlagsMutation } from "./useMessageFlagsMutation";
+import { useMessageMoveMutation } from "./useMessageMoveMutation";
 
 interface GlanceToolbarProps {
     selectedMailboxName: string;
@@ -19,6 +20,7 @@ interface GlanceToolbarProps {
     areAllSelected: boolean;
     onToggleSelectAll: () => void;
     selectedUniqueIds: Set<number>;
+    specialTrashFolderPath?: string;
 }
 
 export function GlanceToolbar({
@@ -26,17 +28,29 @@ export function GlanceToolbar({
     selectedMailboxPath,
     areAllSelected,
     onToggleSelectAll,
-    selectedUniqueIds
+    selectedUniqueIds,
+    specialTrashFolderPath = undefined
 }: GlanceToolbarProps) {
     const flagsMutation = useMessageFlagsMutation({ mailboxPath: selectedMailboxPath });
+    const moveMutation = useMessageMoveMutation({ mailboxPath: selectedMailboxPath });
     const hasSelection = selectedUniqueIds.size > 0;
 
-    const runBulkAction = (flagsToAdd: string[], flagsToRemove: string[]) => {
+    const runBulkFlagUpdate = (flagsToAdd: string[], flagsToRemove: string[]) => {
         if (selectedUniqueIds.size === 0) {
             return;
         }
 
         flagsMutation.mutate({ uniqueIds: Array.from(selectedUniqueIds), flagsToAdd, flagsToRemove });
+    };
+
+    const runBulkMove = (mailboxPathTarget: string) => {
+        if (selectedUniqueIds.size === 0) {
+            return;
+        }
+        console.log(mailboxPathTarget);
+
+        // The emails all selected should be in the same mailbox already and can only accept one source anyway
+        moveMutation.mutate({ uniqueIds: Array.from(selectedUniqueIds), mailboxPathSource: selectedMailboxPath, mailboxPathTarget });
     };
 
     return (
@@ -49,17 +63,20 @@ export function GlanceToolbar({
                 aria-hidden={!hasSelection}
                 className={`flex flex-row items-center gap-2 ml-2 ${hasSelection ? "visible" : "invisible"}`}
             >
-                <ToolbarIconButton title="Mark read" onClick={() => runBulkAction([SEEN_FLAG], [])}>
+                <ToolbarIconButton title="Mark read" onClick={() => runBulkFlagUpdate([SEEN_FLAG], [])}>
                     <EnvelopeOpenIcon className="size-5" />
                 </ToolbarIconButton>
-                <ToolbarIconButton title="Mark unread" onClick={() => runBulkAction([], [SEEN_FLAG])}>
+                <ToolbarIconButton title="Mark unread" onClick={() => runBulkFlagUpdate([], [SEEN_FLAG])}>
                     <EnvelopeIcon className="size-5" />
                 </ToolbarIconButton>
-                <ToolbarIconButton title="Star" onClick={() => runBulkAction([FLAGGED_FLAG], [])}>
+                <ToolbarIconButton title="Star" onClick={() => runBulkFlagUpdate([FLAGGED_FLAG], [])}>
                     <StarIconSolid className="size-5 text-kiwi-info" />
                 </ToolbarIconButton>
-                <ToolbarIconButton title="Unstar" onClick={() => runBulkAction([], [FLAGGED_FLAG])}>
+                <ToolbarIconButton title="Unstar" onClick={() => runBulkFlagUpdate([], [FLAGGED_FLAG])}>
                     <StarIconOutline className="size-5" />
+                </ToolbarIconButton>
+                <ToolbarIconButton title="Trash" onClick={() => { specialTrashFolderPath ? runBulkMove(specialTrashFolderPath) : console.log(specialTrashFolderPath) }}>
+                    <TrashIcon className="size-5" />
                 </ToolbarIconButton>
                 <span className="text-xs opacity-70 ml-1 w-20 inline-block">
                     {hasSelection ? `${selectedUniqueIds.size} selected` : ""}
@@ -69,7 +86,7 @@ export function GlanceToolbar({
             <div className="flex flex-col flex-1 min-w-0 mr-2 font-bold text-right">
                 {selectedMailboxName}
             </div>
-        </div>
+        </div >
     );
 }
 

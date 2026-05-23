@@ -6,7 +6,14 @@
  * selection shape.
  */
 
+import type { GlancePage } from "@KiwiClient/shared";
+
 export interface MailboxSelection {
     name: string;
     path: string;
+}
+
+export interface CachedGlanceData {
+    pages: GlancePage[];
+    pageParams: unknown[];
 }

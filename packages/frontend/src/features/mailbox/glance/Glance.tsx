@@ -24,9 +24,10 @@ const PAGE_SIZE = 25;
 
 interface GlanceProps {
     selectedMailbox: MailboxSelection;
+    specialTrashFolderPath?: string;
 }
 
-export function Glance({ selectedMailbox }: GlanceProps) {
+export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: GlanceProps) {
     const { authFetch } = useContext(AuthContext);
     const setToastMessage = useToastStore(state => state.setMessage);
     const selection = useSelectedGlanceItems();
@@ -65,15 +66,6 @@ export function Glance({ selectedMailbox }: GlanceProps) {
     }
 
     const emailGlances = data.pages.flatMap(page => page.items).reverse();
-
-    if (emailGlances.length === 0) {
-        const emptyMessage = selectedMailbox.path === "[Gmail]"
-            ? "Select a Gmail tag from the sidebar"
-            : "mailbox is empty";
-        const emptyStatus = selectedMailbox.path === "[Gmail]" ? "info" : "empty";
-        return <GlanceShell selectedMailboxName={selectedMailbox.name} selectedMailboxPath={selectedMailbox.path} statusElement={<StatusComponent status={emptyStatus} message={emptyMessage} />} />;
-    }
-
     const allVisibleIds = emailGlances.map(item => item.uniqueId);
     const areAllSelected = selection.areAllSelected(allVisibleIds);
 
@@ -94,6 +86,7 @@ export function Glance({ selectedMailbox }: GlanceProps) {
                     areAllSelected={areAllSelected}
                     onToggleSelectAll={handleToggleSelectAll}
                     selectedUniqueIds={selection.selectedUniqueIds}
+                    specialTrashFolderPath={specialTrashFolderPath}
                 />
             }
         >

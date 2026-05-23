@@ -351,6 +351,44 @@ export class ImapInstance {
     }
 
     /**
+     * @param mailboxPathSource - The source mailbox.
+     * @param mailboxPathDestination - The destination mailbox.
+     * @param uniqueIds - The message UIDs to update; must be non-empty.
+     * @returns A boolean on if the move was successful or not
+     */
+    async moveMessages(mailboxPathSource: string, mailboxPathDestination: string, uniqueIds: number[]): Promise<boolean> {
+        assert(uniqueIds.length > 0, "uniqueIds must contain at least one value");
+        for (const uniqueId of uniqueIds) {
+            assert(!isNaN(uniqueId) && uniqueId >= 0, "every uniqueId must be a non-negative number");
+        }
+
+        if (!this.imapClient || !this.isAuthenticated()) {
+            return false;
+        }
+
+        if (mailboxPathSource.length === 0 || mailboxPathDestination.length === 0) {
+            return false;
+        }
+
+        const uidRange = uniqueIds.join(",");
+        const mailboxLock = await this.imapClient.getMailboxLock(mailboxPathSource);
+
+        try {
+            const result = await this.imapClient.messageMove(uidRange, mailboxPathDestination, { uid: true });
+            if (!result) {
+                return false;
+            }
+        } catch {
+            return false;
+        }
+        finally {
+            mailboxLock.release();
+        }
+
+        return true;
+    }
+
+    /**
      * @brief Walks the body structure tree to find a part with the given MIME type.
      *
      * @param node - The current body structure node, or undefined.

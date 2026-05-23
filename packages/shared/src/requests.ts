@@ -35,5 +35,18 @@ export const MessageFlagsUpdateSchema = z.object({
     remove: z.array(z.string()).default([])
 });
 
+/**
+ * @brief Body of a message move update request covering one or many messages.
+ *
+ * Accepts an array of UIDs so a single round trip and can move them all to a
+ * single target mailbox path destination.
+ */
+export const MessageMoveUpdateSchema = z.object({
+    uniqueIds: z.array(z.number().int().nonnegative()).min(1),
+    mailboxPathTarget: z.string()
+});
+
+
 export type GlancePageRequest = z.infer<typeof GlancePageRequestSchema>;
 export type MessageFlagsUpdate = z.infer<typeof MessageFlagsUpdateSchema>;
+export type MessageMoveUpdate = z.infer<typeof MessageMoveUpdateSchema>;

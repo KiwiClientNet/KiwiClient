@@ -66,6 +66,13 @@ interface PatchMessageFlagsArguments {
     flagsToRemove: string[];
 }
 
+interface PatchMessageMoveArguments {
+    authFetch: AuthFetch;
+    mailboxPathSource: string;
+    mailboxPathTarget: string;
+    uniqueIds: number[];
+}
+
 /**
  * @brief Adds and removes IMAP flags on one or many messages in one request.
  *
@@ -73,9 +80,22 @@ interface PatchMessageFlagsArguments {
  * selection in a single round trip rather than firing one call per row.
  */
 export async function patchMessageFlags({ authFetch, mailboxPath, uniqueIds, flagsToAdd, flagsToRemove }: PatchMessageFlagsArguments): Promise<void> {
-    const response = await authFetch(`/api/mailboxes/${encodeURIComponent(mailboxPath)}/messages`, {
+    const response = await authFetch(`/api/mailboxes/${encodeURIComponent(mailboxPath)}/messages/flags/change`, {
         method: "PATCH",
         body: { uniqueIds, add: flagsToAdd, remove: flagsToRemove }
+    });
+
+    const body = (await response.json()) as EmptyResponse;
+
+    if (!body.success) {
+        throw new Error(body.message);
+    }
+}
+
+export async function patchMoveMessages({ authFetch, mailboxPathSource, mailboxPathTarget, uniqueIds }: PatchMessageMoveArguments): Promise<void> {
+    const response = await authFetch(`/api/mailboxes/${encodeURIComponent(mailboxPathSource)}/messages/move`, {
+        method: "PATCH",
+        body: { uniqueIds, mailboxPathTarget }
     });
 
     const body = (await response.json()) as EmptyResponse;

@@ -13,7 +13,9 @@ import {
     type EmptyResponse,
     type GlancePageResponse,
     GlancePageRequestSchema,
-    MessageFlagsUpdateSchema
+    MessageFlagsUpdateSchema,
+    MessageMoveUpdateSchema,
+    MessageMoveUpdate
 } from "@KiwiClient/shared";
 import { decrypt, type TokenPayload_t } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
@@ -113,7 +115,7 @@ router.get("/mailboxes/:mailboxPath/messages/:uniqueId", async (request: Request
     }
 });
 
-router.patch("/mailboxes/:mailboxPath/messages", async (request: Request, response: Response<EmptyResponse>) => {
+router.patch("/mailboxes/:mailboxPath/messages/flags/change", async (request: Request, response: Response<EmptyResponse>) => {
     const mailboxPath = decodeMailboxPath(request.params.mailboxPath);
     if (!mailboxPath) {
         response.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "mailboxPath is required" });
@@ -153,6 +155,48 @@ router.patch("/mailboxes/:mailboxPath/messages", async (request: Request, respon
     } catch (thrownError: any) {
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to update flags" });
+    }
+});
+
+router.patch("/mailboxes/:mailboxPath/messages/move", async (request: Request<{ mailboxPath: string }, EmptyResponse, MessageMoveUpdate>, response: Response<EmptyResponse>) => {
+    const mailboxPathSource = decodeMailboxPath(request.params.mailboxPath);
+    if (!mailboxPathSource) {
+        response.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "A source mailbox path is required" });
+        return;
+    }
+
+    const bodyParseResult = MessageMoveUpdateSchema.safeParse(request.body);
+    if (!bodyParseResult.success) {
+        response.status(400).json({ success: false, code: "VALIDATION_ERROR", message: bodyParseResult.error.issues[0]?.message ?? "Invalid body" });
+        return;
+    }
+
+    const tokenPayload = response.locals.user as TokenPayload_t;
+
+    try {
+        const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
+        const imapInstance = await imapPool.acquire(loginBody);
+
+        try {
+            const succeeded = await imapInstance.moveMessages(
+                mailboxPathSource,
+                bodyParseResult.data.mailboxPathTarget,
+                bodyParseResult.data.uniqueIds
+            );
+
+            if (!succeeded) {
+                response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to move messages" });
+                return;
+            }
+
+            response.json({ success: true, data: {} });
+        } finally {
+            imapPool.release(loginBody);
+        }
+
+    } catch (thrownError: any) {
+        console.error(thrownError);
+        response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to move messages" });
     }
 });
 

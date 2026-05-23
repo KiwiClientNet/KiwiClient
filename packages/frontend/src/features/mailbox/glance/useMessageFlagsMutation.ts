@@ -8,10 +8,11 @@
 
 import { useContext } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { EmailFlags, GlancePage } from "@KiwiClient/shared";
+import type { EmailFlags } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
 import { patchMessageFlags } from "../../../api/messages";
 import { glanceQueryKey } from "./queryKeys";
+import type { CachedGlanceData } from "../types";
 
 const FLAG_TO_DTO_KEY: Record<string, keyof EmailFlags> = {
     "\\Seen": "seen",
@@ -19,11 +20,6 @@ const FLAG_TO_DTO_KEY: Record<string, keyof EmailFlags> = {
     "\\Answered": "answered",
     "\\Draft": "draft"
 };
-
-interface CachedGlanceData {
-    pages: GlancePage[];
-    pageParams: unknown[];
-}
 
 interface FlagsMutationVariables {
     uniqueIds: number[];
