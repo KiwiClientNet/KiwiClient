@@ -37,10 +37,9 @@
         start_period: 15s
 
       logging:
-        driver: json-file
+        driver: journald
         options:
-          max-size: "10m"
-          max-file: "7"
+          tag: kiwiclient-backend
       networks:
         - kiwiclient
 
