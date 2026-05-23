@@ -18,13 +18,10 @@ export interface MailboxTreeNode {
 /**
  * @brief Titalises a mailbox name for display.
  *
- * Leaves names beginning with an opening bracket alone because they are
- * IMAP namespace prefixes such as "[Gmail]" that should keep their casing.
- *
  * @param rawName - The raw mailbox name as returned by the server.
  * @returns The display-cased name.
  */
-function titaliseMailboxName(rawName: string): string {
+function formatMailboxName(rawName: string): string {
     if (rawName.length === 0) {
         return "";
     }
@@ -51,7 +48,7 @@ export function buildMailboxTree(mailboxes: Mailbox[]): MailboxTreeNode[] {
     const nodeByPath = new Map<string, MailboxTreeNode>();
 
     for (const mailbox of mailboxes) {
-        const displayMailbox: Mailbox = { ...mailbox, name: titaliseMailboxName(mailbox.name) };
+        const displayMailbox: Mailbox = { ...mailbox, name: mailbox.specialUse === '\\Inbox' ? formatMailboxName(mailbox.name) : mailbox.name };
         nodeByPath.set(mailbox.path, { mailbox: displayMailbox, children: [] });
     }
 

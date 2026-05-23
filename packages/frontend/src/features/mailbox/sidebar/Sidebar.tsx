@@ -71,6 +71,8 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                                 setSpecialTrashFolderPath(node.mailbox.path);
                             }
 
+                            console.log(node);
+
                             return (<SidebarTreeNode
                                 key={node.mailbox.path}
                                 node={node}
