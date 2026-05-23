@@ -42,7 +42,7 @@ export function getMailboxIcon(mailboxName: string): React.JSX.Element {
     if (lowerCasedName.includes("archive")) {
         return <ArchiveBoxIcon className={ICON_SIZE_CLASS} />;
     }
-    if (lowerCasedName.includes("trash")) {
+    if (lowerCasedName.includes("trash") || lowerCasedName.includes("bin") || lowerCasedName.includes("rubbish")) {
         return <TrashIcon className={ICON_SIZE_CLASS} />;
     }
     if (lowerCasedName.includes("starred")) {
