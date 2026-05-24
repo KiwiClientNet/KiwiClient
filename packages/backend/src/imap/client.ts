@@ -556,18 +556,17 @@ export class ImapInstance {
             let htmlContent: string | undefined;
             let textContent: string | undefined;
 
+            // Check for HTML part first, if it's there then use it otherwise look for the text part
             if (htmlPartId) {
                 htmlContent = await this.readMessagePartAsString(messageUid, htmlPartId);
-            }
 
-            if (textPartId) {
+                if (htmlContent) {
+                    const inlineImages = this.findInlineImages(fetchedMessage.bodyStructure);
+                    const resolved = await this.resolveInlineImages(messageUid, htmlContent, inlineImages);
+                    htmlContent = resolved.html;
+                }
+            } else if (textPartId) {
                 textContent = await this.readMessagePartAsString(messageUid, textPartId);
-            }
-
-            if (htmlContent) {
-                const inlineImages = this.findInlineImages(fetchedMessage.bodyStructure);
-                const resolved = await this.resolveInlineImages(messageUid, htmlContent, inlineImages);
-                htmlContent = resolved.html;
             }
 
             return mapEmailMessage({

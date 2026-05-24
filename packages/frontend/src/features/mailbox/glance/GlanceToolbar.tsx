@@ -56,7 +56,6 @@ export function GlanceToolbar({
             clearGlanceSelection();
         }
     };
-
     return (
         <div className="rounded-3xl bg-kiwi-black shrink-0 mb-2 flex flex-row items-center gap-2 my-1 p-3 pl-4">
             <div className="flex justify-center px-2">

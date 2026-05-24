@@ -66,15 +66,15 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
     }
 
     const emailGlances = data.pages.flatMap(page => page.items).reverse();
-    const allVisibleIds = emailGlances.map(item => item.uniqueId);
-    const areAllSelected = selection.areAllSelected(allVisibleIds);
+    const allLoadedEmailIds = emailGlances.map(item => item.uniqueId);
+    const areAllSelected = selection.areAllSelected(allLoadedEmailIds);
 
     const handleToggleSelectAll = () => {
         if (areAllSelected) {
             selection.clearSelection();
             return;
         }
-        selection.selectAll(allVisibleIds);
+        selection.selectAll(allLoadedEmailIds);
     };
 
     return (

@@ -57,7 +57,7 @@ export function MailboxPage() {
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: ["mailboxes"],
         queryFn: () => fetchMailboxes(authFetch),
-        select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes), [])
+        select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath), [])
     });
 
     useEffect(() => {
@@ -108,7 +108,6 @@ export function MailboxPage() {
                 onSelectMailbox={handleSelectMailbox}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                setSpecialTrashFolderPath={setSpecialTrashFolderPath}
             />
 
             <div className="flex flex-col flex-1 min-w-0 h-dvh">

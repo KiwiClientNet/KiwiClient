@@ -22,10 +22,9 @@ interface SidebarProps {
     onSelectMailbox: (selection: MailboxSelection) => void;
     isOpen: boolean;
     onClose: () => void;
-    setSpecialTrashFolderPath: (mailboxPath: string) => void;
 }
 
-export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose, setSpecialTrashFolderPath }: SidebarProps) {
+export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose}: SidebarProps) {
     const { logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -67,18 +66,12 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                 <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
                     <ul className="text-sm">
                         {mailboxTree.map(node => {
-                            if (node.mailbox.specialUse === "\\Trash") {
-                                setSpecialTrashFolderPath(node.mailbox.path);
-                            }
-
-                            console.log(node);
-
-                            return (<SidebarTreeNode
+                            return <SidebarTreeNode
                                 key={node.mailbox.path}
                                 node={node}
                                 selectedMailboxPath={selectedMailboxPath}
                                 onSelectMailbox={onSelectMailbox}
-                            />);
+                            />;
                         })}
                     </ul>
                 </nav>
