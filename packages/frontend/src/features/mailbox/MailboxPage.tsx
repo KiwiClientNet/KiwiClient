@@ -20,6 +20,8 @@ import { Sidebar } from "./sidebar/Sidebar";
 import { StatusBar } from "./statusbar/StatusBar";
 import type { MailboxSelection } from "./types";
 import { mailboxesQueryKey } from "./queryKeys";
+import ComposeBox from "./compose/ComposeBox";
+import { useComposeEmailStore } from "../../store/composeEmailStore";
 
 /**
  * @brief Picks a sensible default selection from the freshly-fetched tree.
@@ -54,6 +56,7 @@ export function MailboxPage() {
     const selectedEmail = useSelectedEmailStore(state => state.selected);
     const clearSelectedEmail = useSelectedEmailStore(state => state.clear);
     const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined);
+    const setHidden = useComposeEmailStore(state => state.setHidden);
 
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: mailboxesQueryKey(),
@@ -138,12 +141,12 @@ export function MailboxPage() {
                 </div>
 
                 {!selectedEmail && (
-                    <button className="w-20 h-20 bg-kiwi-light-grey text-kiwi-black rounded-full hover:bg-kiwi-white flex items-center justify-center transition-all duration-200 fixed bottom-20 right-4 block md:hidden shadow-kiwi-dark-grey shadow-sm">
+                    <button onClick={() => setHidden(false)} className="w-20 h-20 bg-kiwi-light-grey text-kiwi-black rounded-full hover:bg-kiwi-white flex items-center justify-center transition-all duration-200 fixed bottom-20 right-4 md:hidden shadow-kiwi-dark-grey shadow-sm">
                         <PencilIcon className="size-10" />
                     </button>
                 )}
-
                 <StatusBar />
+                <ComposeBox />
             </div>
         </div>
     );

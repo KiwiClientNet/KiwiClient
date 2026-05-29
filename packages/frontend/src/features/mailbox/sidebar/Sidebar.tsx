@@ -15,6 +15,7 @@ import { ReverseLogo } from "../../../components/Logo";
 import type { MailboxTreeNode } from "../../../domain/mailboxTree";
 import type { MailboxSelection } from "../types";
 import { SidebarItem } from "./SidebarItem";
+import { useComposeEmailStore } from "../../../store/composeEmailStore";
 
 interface SidebarProps {
     mailboxTree: MailboxTreeNode[];
@@ -27,6 +28,7 @@ interface SidebarProps {
 export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose }: SidebarProps) {
     const { logout } = useContext(AuthContext);
     const navigate = useNavigate();
+    const setHidden = useComposeEmailStore(state => state.setHidden);
 
     const handleLogout = () => {
         logout().then(() => navigate("/login"));
@@ -64,7 +66,7 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                 </div>
 
                 <div className="pl-3 pr-1 pb-2 hidden md:block">
-                    <Button text="New Message" title="Compose a new email" reverseColours={true} />
+                    <Button text="New Message" title="Compose a new email" reverseColours={true} onClickFunction={() => setHidden(false)} />
                 </div>
 
                 <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
