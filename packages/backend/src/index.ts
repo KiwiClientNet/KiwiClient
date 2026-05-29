@@ -27,7 +27,7 @@ const ALLOWED_ORIGINS: string[] = getEnv("CORS_ORIGINS")
     .filter((origin) => origin.length > 0);
 
 const app = express();
-
+app.set("trust proxy", 1); // Trust first hop (the local reverse proxy)
 app.use(helmet());
 
 app.use(cors({

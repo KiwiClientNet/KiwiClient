@@ -6,6 +6,11 @@
  * route can ask for the user's already-warm connection. A periodic keepalive
  * pings each entry to detect dead sockets early; idle entries are evicted
  * after a fixed window to avoid leaking authenticated sessions.
+ *
+ * Responsibilities are split: ImapConnectionFactory owns credential prep and
+ * raw login, PendingConnections deduplicates concurrent opens, KeepaliveScheduler
+ * runs the per-entry heartbeat, IdleEvictor sweeps stale entries, and
+ * ImapConnectionPool wires them together and is the only thing routes import.
  */
 
 import { ImapInstance } from "./imap/client.js";
@@ -18,76 +23,169 @@ interface PoolEntry {
     imapInstance: ImapInstance;
     lastUsed: number;
     loginBody: LoginBody;
-    keepaliveTimer: NodeJS.Timeout;
 }
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const KEEPALIVE_INTERVAL_MS = 4 * 60 * 1000;
 const STALE_CHECK_INTERVAL_MS = 60 * 1000;
 
-class ImapConnectionPool {
-    private pool: Map<string, PoolEntry> = new Map();
+/**
+ * @brief Pure key derivation: same (serverType, email) must hit the same entry.
+ */
+function makePoolKey(loginBody: LoginBody): string {
+    return `${loginBody.serverType}:${loginBody.email}`;
+}
+
+/**
+ * @brief Creates a logged-in ImapInstance for a given login.
+ *
+ * Exists as an interface so the pool can be unit-tested against a fake IMAP
+ * server (Liskov-substitutable) without touching the network, and so future
+ * auth backends (e.g. Microsoft OAuth) can be plugged in without editing the
+ * pool (open/closed).
+ */
+interface ImapConnectionFactory {
+    create(loginBody: LoginBody): Promise<ImapInstance>;
+}
+
+class DefaultImapConnectionFactory implements ImapConnectionFactory {
+    async create(loginBody: LoginBody): Promise<ImapInstance> {
+        const preparedLogin = await this.prepareCredentials(loginBody);
+        const imapInstance = new ImapInstance();
+        await imapInstance.loginToEmailServer(preparedLogin);
+
+        const status = imapInstance.getStatus();
+        if (status === ImapInstance.Status.LOGGED_IN) {
+            return imapInstance;
+        }
+
+        throw new Error(`IMAP login failed: serverType=${preparedLogin.serverType} status=${ImapInstance.Status[status]}`);
+    }
+
+    /**
+     * @brief Refreshes the Oauth access code before login when a refresh token is on hand.
+     *
+     * Returns the original login untouched for any path where no refresh is
+     * possible — keeps the call site in create() free of branching.
+     */
+    private async prepareCredentials(loginBody: LoginBody): Promise<LoginBody> {
+        if (loginBody.serverType !== "GMAIL") {
+            return loginBody;
+        }
+
+        if (!loginBody.googleRefreshToken) {
+            return loginBody;
+        }
+
+        try {
+            const accessCode = await refreshGoogleAccessToken(loginBody.googleRefreshToken);
+            return { ...loginBody, accessCode };
+        } catch {
+            throw new Error("Gmail session expired - user must re-authenticate");
+        }
+    }
+}
+
+/**
+ * @brief Tracks in-flight connect promises so concurrent acquires share one login.
+ */
+class PendingConnections {
     private pending: Map<string, Promise<ImapInstance>> = new Map();
-    private cleanupInterval: NodeJS.Timeout;
 
-    constructor() {
-        this.cleanupInterval = setInterval(() => this.evictStale(), STALE_CHECK_INTERVAL_MS);
+    get(key: string): Promise<ImapInstance> | undefined {
+        return this.pending.get(key);
     }
 
-    /**
-     * @brief Builds the pool key from the login identity.
-     *
-     * The combination of server type and email is unique per user because
-     * the same email could in theory be configured against multiple servers.
-     */
-    private makeKey(loginBody: LoginBody): string {
-        return `${loginBody.serverType}:${loginBody.email}`;
+    track(key: string, connectionPromise: Promise<ImapInstance>): Promise<ImapInstance> {
+        const trackedPromise = connectionPromise.finally(() => this.pending.delete(key));
+        this.pending.set(key, trackedPromise);
+        return trackedPromise;
     }
+}
 
-    /**
-     * @brief Starts a periodic NOOP to keep the connection warm.
-     *
-     * Evicts the entry if the server stops responding to NOOP so callers do
-     * not waste a request attempting to use a dead connection.
-     */
-    private startKeepalive(key: string, imapInstance: ImapInstance): NodeJS.Timeout {
-        return setInterval(async () => {
-            const entry = this.pool.get(key);
-            if (!entry) {
-                return;
-            }
+/**
+ * @brief Runs a NOOP heartbeat per entry; reports dead entries via the eviction callback.
+ */
+class KeepaliveScheduler {
+    private timers: Map<string, NodeJS.Timeout> = new Map();
 
+    constructor(private readonly intervalMs: number, private readonly onDead: (key: string) => Promise<void>) { }
+
+    start(key: string, imapInstance: ImapInstance): void {
+        const timer = setInterval(async () => {
             const isAlive = await imapInstance.isAlive().catch(() => false);
             if (isAlive) {
                 return;
             }
+            await this.onDead(key);
+            console.warn(`[ImapPool] Keepalive failed, evicted ${key}`);
+        }, this.intervalMs);
+        this.timers.set(key, timer);
+    }
 
-            clearInterval(entry.keepaliveTimer);
-            this.pool.delete(key);
-            console.warn(`[ImapPool] Keepalive failed, evicted`);
-        }, KEEPALIVE_INTERVAL_MS);
+    stop(key: string): void {
+        const timer = this.timers.get(key);
+        if (!timer) {
+            return;
+        }
+        clearInterval(timer);
+        this.timers.delete(key);
+    }
+}
+
+/**
+ * @brief Periodically sweeps entries that have not been touched within the idle window.
+ */
+class IdleEvictor {
+    private readonly sweepTimer: NodeJS.Timeout;
+
+    constructor(idleTimeoutMs: number, sweepIntervalMs: number, getEntries: () => IterableIterator<[string, PoolEntry]>, evictKey: (key: string) => Promise<void>) {
+        this.sweepTimer = setInterval(async () => {
+            const nowMs = Date.now();
+            for (const [key, entry] of getEntries()) {
+                if (nowMs - entry.lastUsed > idleTimeoutMs) {
+                    await evictKey(key);
+                }
+            }
+        }, sweepIntervalMs);
+    }
+
+    stop(): void {
+        clearInterval(this.sweepTimer);
+    }
+}
+
+class ImapConnectionPool {
+    private readonly pool: Map<string, PoolEntry> = new Map();
+    private readonly pending = new PendingConnections();
+    private readonly factory: ImapConnectionFactory;
+    private readonly keepalive: KeepaliveScheduler;
+    private readonly idleEvictor: IdleEvictor;
+
+    constructor(factory: ImapConnectionFactory = new DefaultImapConnectionFactory()) {
+        this.factory = factory;
+        this.keepalive = new KeepaliveScheduler(KEEPALIVE_INTERVAL_MS, (key) => this.evictByKey(key));
+        this.idleEvictor = new IdleEvictor(IDLE_TIMEOUT_MS, STALE_CHECK_INTERVAL_MS, () => this.pool.entries(), (key) => this.evictByKey(key));
     }
 
     /**
      * @brief Returns a live IMAP connection for the given login, opening one if needed.
      *
-     * Deduplicates concurrent connect attempts by remembering the in-flight
-     * promise per key so the IMAP server is not hit with two parallel logins.
+     * Deduplicates concurrent connect attempts so the IMAP server is not hit
+     * with two parallel logins for the same identity.
      */
     async acquire(loginBody: LoginBody): Promise<ImapInstance> {
-        const key = this.makeKey(loginBody);
+        const key = makePoolKey(loginBody);
         const existingEntry = this.pool.get(key);
+        const existingIsAlive = existingEntry ? await existingEntry.imapInstance.isAlive() : false;
+
+        if (existingEntry && existingIsAlive) {
+            existingEntry.lastUsed = Date.now();
+            return existingEntry.imapInstance;
+        }
 
         if (existingEntry) {
-            const isAlive = await existingEntry.imapInstance.isAlive();
-
-            if (isAlive) {
-                existingEntry.lastUsed = Date.now();
-                return existingEntry.imapInstance;
-            }
-
-            clearInterval(existingEntry.keepaliveTimer);
-            this.pool.delete(key);
+            await this.evictByKey(key);
         }
 
         const inFlightConnection = this.pending.get(key);
@@ -95,92 +193,42 @@ class ImapConnectionPool {
             return inFlightConnection;
         }
 
-        const connectionPromise = this.connect(loginBody).finally(() => {
-            this.pending.delete(key);
-        });
-
-        this.pending.set(key, connectionPromise);
-        return connectionPromise;
-    }
-
-    /**
-     * @brief Opens a new IMAP connection and stores it in the pool on success.
-     *
-     * Refreshes the Gmail access code before the IMAP login when a Google
-     * refresh token is available, so a stored session that has aged past the
-     * 1-hour access token expiry can still be used without re-authenticating.
-     */
-    private async connect(loginBody: LoginBody): Promise<ImapInstance> {
-        const key = this.makeKey(loginBody);
-
-        if (loginBody.serverType === "GMAIL" && loginBody.googleRefreshToken) {
-            try {
-                loginBody.accessCode = await refreshGoogleAccessToken(loginBody.googleRefreshToken);
-            } catch {
-                throw new Error("Gmail session expired - user must re-authenticate");
-            }
-        }
-
-        const imapInstance = new ImapInstance();
-        await imapInstance.loginToEmailServer(loginBody);
-
-        const status = imapInstance.getStatus();
-        if (status !== ImapInstance.Status.LOGGED_IN) {
-            throw new Error(`IMAP login failed with status: ${status}`);
-        }
-
-        const keepaliveTimer = this.startKeepalive(key, imapInstance);
-        this.pool.set(key, { imapInstance, lastUsed: Date.now(), loginBody, keepaliveTimer });
-
-        return imapInstance;
+        return this.pending.track(key, this.openAndStore(key, loginBody));
     }
 
     /**
      * @brief Marks an entry as recently used so the idle timer restarts.
      */
     release(loginBody: LoginBody): void {
-        const entry = this.pool.get(this.makeKey(loginBody));
-        if (entry) {
-            entry.lastUsed = Date.now();
+        const entry = this.pool.get(makePoolKey(loginBody));
+        if (!entry) {
+            return;
         }
+        entry.lastUsed = Date.now();
     }
 
     /**
      * @brief Immediately disconnects and removes the entry for the given login.
-     *
-     * Called on logout so the IMAP credentials do not linger in memory until
-     * the idle eviction would have run.
      */
     async evict(loginBody: LoginBody): Promise<void> {
-        const key = this.makeKey(loginBody);
+        await this.evictByKey(makePoolKey(loginBody));
+    }
+
+    private async openAndStore(key: string, loginBody: LoginBody): Promise<ImapInstance> {
+        const imapInstance = await this.factory.create(loginBody);
+        this.pool.set(key, { imapInstance, lastUsed: Date.now(), loginBody });
+        this.keepalive.start(key, imapInstance);
+        return imapInstance;
+    }
+
+    private async evictByKey(key: string): Promise<void> {
         const entry = this.pool.get(key);
         if (!entry) {
             return;
         }
-
-        clearInterval(entry.keepaliveTimer);
-        await entry.imapInstance.logoutFromEmailServer().catch(() => { });
+        this.keepalive.stop(key);
         this.pool.delete(key);
-    }
-
-    /**
-     * @brief Disconnects any pool entry that has not been used recently.
-     *
-     * Runs on a fixed timer that is shorter than the idle threshold so that
-     * an entry that becomes stale shortly after the previous cleanup tick
-     * does not have to wait a full idle window before being removed.
-     */
-    private async evictStale(): Promise<void> {
-        const nowMs = Date.now();
-        for (const [key, entry] of this.pool.entries()) {
-            if (nowMs - entry.lastUsed <= IDLE_TIMEOUT_MS) {
-                continue;
-            }
-
-            clearInterval(entry.keepaliveTimer);
-            await entry.imapInstance.logoutFromEmailServer().catch(() => { });
-            this.pool.delete(key);
-        }
+        await entry.imapInstance.logoutFromEmailServer().catch(() => { });
     }
 }
 
