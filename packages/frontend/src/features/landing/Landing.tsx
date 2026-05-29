@@ -44,7 +44,7 @@ export default function Landing() {
 
         return (
             <>
-                <Icon className={`hidden sm:block size-10 ${colour}`} />
+                <Icon className={`block size-10 ${colour}`} />
                 <h4 className="text-md sm:text-xl lg:text-2xl m-3 text-center">{message}</h4>
             </>
         );

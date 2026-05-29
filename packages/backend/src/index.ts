@@ -17,7 +17,6 @@ import messageRoutes from "./routes/messages.js";
 import partRoutes from "./routes/parts.js";
 import waitlistRoutes from "./routes/waitlist.js";
 import { getEnv } from "./auth_sessions.js";
-import rateLimit from "express-rate-limit";
 
 const DEFAULT_PORT = 3001;
 const PORT = Number(process.env.PORT) || DEFAULT_PORT;
@@ -43,18 +42,11 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Configure the rate limiter
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: {
-        error: 'Too many requests, please try again later.'
-    },
-    standardHeaders: true, // Return RateLimit-* headers
-    legacyHeaders: false   // Disable X-RateLimit-* headers
-});
+// Per-route rate limiters live in middleware/rateLimiter.ts and are mounted on
+// the abuse-prone unauthenticated endpoints (login, refresh, waitlist).
+// Authenticated routes sit behind requireAuth, so a flooded request implies a
+// compromised session rather than anonymous abuse and is a different threat model.
 
-app.use(globalLimiter);
 app.use(express.json());
 app.use(cookieParser());
 

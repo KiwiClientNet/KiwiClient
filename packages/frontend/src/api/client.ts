@@ -14,6 +14,7 @@ export interface ApiFetchOptions {
     queryParameters?: Record<string, string | number | boolean>;
     body?: unknown;
     accessToken?: string | null;
+    signal?: AbortSignal;
 }
 
 /**
@@ -59,6 +60,10 @@ export async function apiFetch(endpoint: string, options: ApiFetchOptions = {}):
 
     if (options.body !== undefined && method !== "GET") {
         requestInit.body = JSON.stringify(options.body);
+    }
+
+    if (options.signal) {
+        requestInit.signal = options.signal;
     }
 
     return fetch(`${endpoint}${queryString}`, requestInit);

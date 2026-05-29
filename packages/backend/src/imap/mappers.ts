@@ -76,6 +76,28 @@ export function mapMailbox(listResponse: ListResponse): Mailbox {
 }
 
 /**
+ * @brief Coerces an envelope date value to an ISO string, tolerating string inputs.
+ *
+ * imapflow's type declares envelope.date as Date but real responses can yield
+ * a string for messages whose RFC 5322 Date header could not be parsed into a
+ * Date instance. Falling back to the epoch keeps the schema satisfied and the
+ * frontend able to render the row instead of dropping the entire message.
+ */
+function toIsoStringSafe(rawDate: unknown): string {
+    if (rawDate instanceof Date) {
+        const epochMillis = rawDate.getTime();
+        return Number.isNaN(epochMillis) ? new Date(0).toISOString() : rawDate.toISOString();
+    }
+    if (typeof rawDate === "string" || typeof rawDate === "number") {
+        const parsedDate = new Date(rawDate);
+        if (!Number.isNaN(parsedDate.getTime())) {
+            return parsedDate.toISOString();
+        }
+    }
+    return new Date(0).toISOString();
+}
+
+/**
  * @brief Maps a fetched message into the lightweight EmailGlance DTO.
  *
  * Returns null when the message has no envelope or no sender address; the
@@ -96,7 +118,7 @@ export function mapEmailGlance(message: FetchMessageObject, mailboxPath: string)
         return null;
     }
 
-    const dateIso = message.envelope.date ? message.envelope.date.toISOString() : new Date(0).toISOString();
+    const dateIso = toIsoStringSafe(message.envelope.date);
 
     return {
         uniqueId: message.uid,

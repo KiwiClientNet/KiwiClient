@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState, useContext } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bars3Icon } from "@heroicons/react/24/outline";
+import { Bars3Icon, PencilIcon } from "@heroicons/react/24/outline";
 import { AuthContext } from "../../auth/AuthContext";
 import { fetchMailboxes } from "../../api/mailboxes";
 import { MailboxPageLoading, StatusComponent } from "../../components/Loading";
@@ -19,6 +19,7 @@ import { Glance } from "./glance/Glance";
 import { Sidebar } from "./sidebar/Sidebar";
 import { StatusBar } from "./statusbar/StatusBar";
 import type { MailboxSelection } from "./types";
+import { mailboxesQueryKey } from "./queryKeys";
 
 /**
  * @brief Picks a sensible default selection from the freshly-fetched tree.
@@ -55,7 +56,7 @@ export function MailboxPage() {
     const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined);
 
     const { data: mailboxTree = [], error, isPending } = useQuery({
-        queryKey: ["mailboxes"],
+        queryKey: mailboxesQueryKey(),
         queryFn: () => fetchMailboxes(authFetch),
         select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath), [])
     });
@@ -135,6 +136,12 @@ export function MailboxPage() {
                         <Emailbox onBack={handleBackToGlance} />
                     </div>
                 </div>
+
+                {!selectedEmail && (
+                    <button className="w-20 h-20 bg-kiwi-light-grey text-kiwi-black rounded-full hover:bg-kiwi-white flex items-center justify-center transition-all duration-200 fixed bottom-20 right-4 block md:hidden shadow-kiwi-dark-grey shadow-sm">
+                        <PencilIcon className="size-10" />
+                    </button>
+                )}
 
                 <StatusBar />
             </div>

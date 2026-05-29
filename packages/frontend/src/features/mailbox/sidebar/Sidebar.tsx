@@ -10,7 +10,7 @@ import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AuthContext } from "../../../auth/AuthContext";
-import { BorderlessButton } from "../../../components/Button";
+import { BorderlessButton, Button } from "../../../components/Button";
 import { ReverseLogo } from "../../../components/Logo";
 import type { MailboxTreeNode } from "../../../domain/mailboxTree";
 import type { MailboxSelection } from "../types";
@@ -24,7 +24,7 @@ interface SidebarProps {
     onClose: () => void;
 }
 
-export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose}: SidebarProps) {
+export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose }: SidebarProps) {
     const { logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -51,7 +51,7 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                     md:translate-x-0
                 `}
             >
-                <div className="flex items-center justify-between p-4 md:justify-center">
+                <div className="flex items-center justify-between pl-4 md:justify-center">
                     <ReverseLogo className="w-16 h-16 md:w-24 md:h-24" />
                     <button
                         type="button"
@@ -61,6 +61,10 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                     >
                         <XMarkIcon className="size-6" />
                     </button>
+                </div>
+
+                <div className="pl-3 pr-1 pb-2 hidden md:block">
+                    <Button text="New Message" title="Compose a new email" reverseColours={true} />
                 </div>
 
                 <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
@@ -112,10 +116,12 @@ function SidebarTreeNode({ node, selectedMailboxPath, onSelectMailbox }: Sidebar
         onSelectMailbox({ name: node.mailbox.name, path: node.mailbox.path });
     };
 
+    // Base case - no children
     if (!hasChildren) {
         return (
             <SidebarItem
                 mailboxName={node.mailbox.name}
+                unSeenEmails={node.mailbox.unseen}
                 isSelected={isSelected}
                 isChildrenVisible={isExpanded}
                 showChevron={false}
@@ -129,6 +135,7 @@ function SidebarTreeNode({ node, selectedMailboxPath, onSelectMailbox }: Sidebar
         <>
             <SidebarItem
                 mailboxName={node.mailbox.name}
+                unSeenEmails={node.mailbox.unseen}
                 isSelected={isSelected}
                 isChildrenVisible={isExpanded}
                 showChevron={true}

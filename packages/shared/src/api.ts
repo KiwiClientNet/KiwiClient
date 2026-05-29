@@ -67,6 +67,7 @@ export const GlancePageSchema = z.object({
 export const MailboxesResponseSchema = apiResult(z.array(MailboxSchema));
 export const GlancePageResponseSchema = apiResult(GlancePageSchema);
 export const EmailMessageResponseSchema = apiResult(EmailMessageSchema);
+export const EmailMessagesResponseSchema = apiResult(z.array(EmailMessageSchema));
 export const EmptyResponseSchema = apiResult(z.object({}));
 
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
@@ -75,4 +76,5 @@ export type GlancePage = z.infer<typeof GlancePageSchema>;
 export type MailboxesResponse = z.infer<typeof MailboxesResponseSchema>;
 export type GlancePageResponse = z.infer<typeof GlancePageResponseSchema>;
 export type EmailMessageResponse = z.infer<typeof EmailMessageResponseSchema>;
+export type EmailMessagesResponse = z.infer<typeof EmailMessagesResponseSchema>;
 export type EmptyResponse = z.infer<typeof EmptyResponseSchema>;

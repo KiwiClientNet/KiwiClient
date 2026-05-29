@@ -7,12 +7,13 @@
  * API call covering every selected UID.
  */
 
-import { EnvelopeIcon, EnvelopeOpenIcon, TrashIcon, StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { SEEN_FLAG, FLAGGED_FLAG } from "@KiwiClient/shared";
 import { Checkbox } from "../../../components/Checkbox";
 import { useMessageFlagsMutation } from "./useMessageFlagsMutation";
 import { useMessageMoveMutation } from "./useMessageMoveMutation";
+import { FolderInput, Mail, MailOpen, Trash2 } from "lucide-react";
 
 interface GlanceToolbarProps {
     selectedMailboxName: string;
@@ -34,7 +35,7 @@ export function GlanceToolbar({
     clearGlanceSelection = undefined
 }: GlanceToolbarProps) {
     const flagsMutation = useMessageFlagsMutation({ mailboxPath: selectedMailboxPath });
-    const moveMutation = useMessageMoveMutation({ mailboxPath: selectedMailboxPath });
+    const moveMutation = useMessageMoveMutation();
     const hasSelection = selectedUniqueIds.size > 0;
 
     const runBulkFlagUpdate = (flagsToAdd: string[], flagsToRemove: string[]) => {
@@ -67,10 +68,13 @@ export function GlanceToolbar({
                 className={`flex flex-row items-center gap-2 ml-2 ${hasSelection ? "visible" : "invisible"}`}
             >
                 <ToolbarIconButton title="Mark read" onClick={() => runBulkFlagUpdate([SEEN_FLAG], [])}>
-                    <EnvelopeOpenIcon className="size-5" />
+                    <MailOpen className="size-5" />
                 </ToolbarIconButton>
                 <ToolbarIconButton title="Mark unread" onClick={() => runBulkFlagUpdate([], [SEEN_FLAG])}>
-                    <EnvelopeIcon className="size-5" />
+                    <Mail className="size-5" />
+                </ToolbarIconButton>
+                <ToolbarIconButton title="Move mail to" onClick={() => console.log("moving")}>
+                    <FolderInput className="size-5" />
                 </ToolbarIconButton>
                 <ToolbarIconButton title="Star" onClick={() => runBulkFlagUpdate([FLAGGED_FLAG], [])}>
                     <StarIconSolid className="size-5 text-kiwi-info" />
@@ -79,14 +83,14 @@ export function GlanceToolbar({
                     <StarIconOutline className="size-5" />
                 </ToolbarIconButton>
                 <ToolbarIconButton title="Trash" onClick={() => { specialTrashFolderPath ? runBulkMove(specialTrashFolderPath) : { /* Don't do anything */ } }}>
-                    <TrashIcon className="size-5" />
+                    <Trash2 className="size-5" />
                 </ToolbarIconButton>
                 <span className="text-xs opacity-70 ml-1 w-20 inline-block">
                     {hasSelection ? `${selectedUniqueIds.size} selected` : ""}
                 </span>
             </div>
 
-            <div className="flex flex-col flex-1 min-w-0 mr-2 font-bold text-right">
+            <div className="flex-col flex-1 min-w-0 mr-2 font-bold hidden md:block text-right">
                 {selectedMailboxName}
             </div>
         </div >

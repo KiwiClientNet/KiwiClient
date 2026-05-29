@@ -12,6 +12,7 @@ import DOMPurify from "dompurify";
 import { useQuery } from "@tanstack/react-query";
 import { AuthContext } from "../../../auth/AuthContext";
 import { fetchSingleMessage } from "../../../api/messages";
+import { emailQueryKey } from "../glance/queryKeys";
 import { EmailLoading } from "./EmailLoading";
 
 interface SelectedEmailReference {
@@ -54,7 +55,7 @@ export function EmailIframe({ selected }: { selected: SelectedEmailReference }) 
     const { authFetch } = useContext(AuthContext);
 
     const { data, status, isLoading } = useQuery({
-        queryKey: ["email", selected.mailboxPath, selected.uniqueId],
+        queryKey: emailQueryKey(selected.mailboxPath, selected.uniqueId),
         queryFn: () => fetchSingleMessage({
             authFetch,
             mailboxPath: selected.mailboxPath,

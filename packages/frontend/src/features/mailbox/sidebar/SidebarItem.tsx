@@ -12,6 +12,7 @@ import { getMailboxIcon } from "./mailboxIcon";
 
 interface SidebarItemProps {
     mailboxName: string;
+    unSeenEmails: number;
     isSelected: boolean;
     isChildrenVisible: boolean;
     showChevron: boolean;
@@ -19,7 +20,7 @@ interface SidebarItemProps {
     onFolderClick: MouseEventHandler<HTMLButtonElement>;
 }
 
-export function SidebarItem({ mailboxName, isSelected, isChildrenVisible, showChevron, onChevronClick, onFolderClick }: SidebarItemProps) {
+export function SidebarItem({ mailboxName, unSeenEmails, isSelected, isChildrenVisible, showChevron, onChevronClick, onFolderClick }: SidebarItemProps) {
     const backgroundColour = isSelected ? "kiwi-light-black" : "background";
     const icon = getMailboxIcon(mailboxName);
 
@@ -27,17 +28,18 @@ export function SidebarItem({ mailboxName, isSelected, isChildrenVisible, showCh
         <li className="flex flex-row items-center">
             {showChevron && (
                 <ChevronDownIcon
-                    className={`hover:text-kiwi-light-black transition duration-200 cursor-pointer shrink-0 size-5 ml-2 ${isChildrenVisible ? "rotate-0" : "-rotate-90"}`}
+                    className={`hover:text-kiwi-light-black transition duration-200 cursor-pointer shrink-0 size-5 ml-5 ${isChildrenVisible ? "rotate-0" : "-rotate-90"}`}
                     onClick={onChevronClick}
                 />
             )}
             <button
                 onClick={onFolderClick}
                 title={mailboxName}
-                className={`flex items-center w-full truncate px-2 py-1 my-1 mr-1 rounded-xl border border-transparent ${showChevron ? "" : "ml-7"} bg-${backgroundColour} text-foreground hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors duration-200 cursor-pointer outline-none focus:ring-1 focus:ring-kiwi-middle-grey`}
+                className={`flex items-center w-full truncate px-2 py-1 my-1 mr-1 rounded-xl border border-transparent ${showChevron ? "" : "ml-3"} bg-${backgroundColour} text-foreground hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors duration-200 cursor-pointer outline-none focus:ring-1 focus:ring-kiwi-middle-grey`}
             >
                 <span className="shrink-0 mr-3">{icon}</span>
                 <span className="flex-1 text-left truncate">{mailboxName}</span>
+                {unSeenEmails > 0 && <span className="flex-1 text-right truncate">{unSeenEmails}</span>}
             </button>
         </li>
     );

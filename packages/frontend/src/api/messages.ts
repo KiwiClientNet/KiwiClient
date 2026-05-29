@@ -6,7 +6,7 @@
  * concatenating it into the endpoint path.
  */
 
-import type { EmailMessage, EmailMessageResponse, EmptyResponse, GlancePage, GlancePageResponse } from "@KiwiClient/shared";
+import type { EmailMessage, EmailMessageResponse, EmailMessagesResponse, EmptyResponse, GlancePage, GlancePageResponse } from "@KiwiClient/shared";
 import type { ApiFetchOptions } from "./client";
 
 type AuthFetch = (endpoint: string, options?: ApiFetchOptions) => Promise<Response>;
@@ -50,6 +50,44 @@ interface FetchSingleMessageArguments {
 export async function fetchSingleMessage({ authFetch, mailboxPath, uniqueId }: FetchSingleMessageArguments): Promise<EmailMessage> {
     const response = await authFetch(`/api/mailboxes/${encodeURIComponent(mailboxPath)}/messages/${uniqueId}`);
     const body = (await response.json()) as EmailMessageResponse;
+
+    if (!body.success) {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+}
+
+interface FetchBulkBodiesArguments {
+    authFetch: AuthFetch;
+    mailboxPath: string;
+    uniqueIds: number[];
+    signal?: AbortSignal;
+}
+
+/**
+ * @brief Fetches several full messages in one request to warm a client-side cache.
+ *
+ * The backend serialises the IMAP fetches inside a single mailbox lock, so
+ * passing a long uniqueIds list will produce one slow response instead of
+ * many fast ones. Callers that need to keep the IMAP connection responsive
+ * for other work should chunk the list themselves and call this helper
+ * several times rather than firing one huge batch.
+ *
+ * @param arguments - The authFetch helper, the mailbox path, the UID list, and an optional abort signal.
+ * @returns The array of EmailMessage DTOs returned by the backend; may be shorter than uniqueIds if some messages were missing.
+ */
+export async function fetchBulkBodies({ authFetch, mailboxPath, uniqueIds, signal }: FetchBulkBodiesArguments): Promise<EmailMessage[]> {
+    if (uniqueIds.length === 0) {
+        return [];
+    }
+
+    const response = await authFetch(`/api/mailboxes/${encodeURIComponent(mailboxPath)}/messages/bodies`, {
+        queryParameters: { uniqueIds: uniqueIds.join(",") },
+        signal
+    });
+
+    const body = (await response.json()) as EmailMessagesResponse;
 
     if (!body.success) {
         throw new Error(body.message);

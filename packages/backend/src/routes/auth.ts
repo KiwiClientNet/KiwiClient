@@ -214,13 +214,20 @@ router.post("/logout", async (request: Request, response: Response<AuthResponse>
 
     const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
+    // Logout must feel instant from the client's point of view: clearing the
+    // cookie and returning success is enough to end the user-facing session.
+    // The IMAP eviction can be slow because imapflow's LOGOUT command queues
+    // behind any in-flight FETCH (e.g. a background prefetch chunk), so it is
+    // fired without await and any failure is logged rather than surfaced.
     if (refreshToken) {
         try {
             const tokenPayload = verifyRefreshToken(refreshToken);
             const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
-            await imapPool.evict(loginBody);
+            imapPool.evict(loginBody).catch(thrownError => {
+                console.warn("Logout could not evict pool entry:", thrownError);
+            });
         } catch (thrownError: any) {
-            console.warn("Logout could not evict pool entry:", thrownError);
+            console.warn("Logout could not decode session for eviction:", thrownError);
         }
     }
 

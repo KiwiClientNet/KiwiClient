@@ -76,7 +76,8 @@ export const MailboxSchema = z.object({
     parentPath: z.string().optional(),
     specialUse: z.string().optional(),
     flags: z.array(z.string()),
-    delimiter: z.string()
+    delimiter: z.string(),
+    unseen: z.number()
 });
 
 export type EmailAddress = z.infer<typeof EmailAddressSchema>;

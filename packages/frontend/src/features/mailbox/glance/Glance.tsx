@@ -8,19 +8,37 @@
  */
 
 import { useContext, useEffect } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import type { GlancePage } from "@KiwiClient/shared";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import type { EmailMessage, GlancePage } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
-import { fetchGlancePage } from "../../../api/messages";
+import { fetchBulkBodies, fetchGlancePage } from "../../../api/messages";
 import { StatusComponent } from "../../../components/Loading";
 import { useToastStore } from "../../../store/toastStore";
 import type { MailboxSelection } from "../types";
 import { GlanceList } from "./GlanceList";
 import { GlanceToolbar } from "./GlanceToolbar";
-import { glanceQueryKey } from "./queryKeys";
+import { emailQueryKey, glanceQueryKey } from "./queryKeys";
 import { useSelectedGlanceItems } from "./useSelectedGlanceItems";
 
+/**
+ * Configuration for the glance background prefetch.
+ *
+ * - PAGE_SIZE: total number of glance items requested per page.
+ * - BACKGROUND_CHUNK_SIZE: how many bodies are fetched in each background
+ *   batch after the page renders. Smaller batches keep the IMAP connection
+ *   responsive between batches because each batch holds the mailbox lock
+ *   only for its own duration.
+ * - BACKGROUND_CHUNK_DELAY_MS: pause inserted between background chunks.
+ *   Set above zero to throttle bandwidth or to leave gaps for other IMAP
+ *   commands to interleave; zero means chunks fire back-to-back.
+ * - USER_ACTION_POLL_INTERVAL_MS: how often the background loop checks
+ *   whether the user has fired an interactive request; while one is in
+ *   flight the loop pauses so the single IMAP connection stays free.
+ */
 const PAGE_SIZE = 25;
+const BACKGROUND_CHUNK_SIZE = 1;
+const BACKGROUND_CHUNK_DELAY_MS = 0;
+const USER_ACTION_POLL_INTERVAL_MS = 100;
 
 interface GlanceProps {
     selectedMailbox: MailboxSelection;
@@ -29,12 +47,23 @@ interface GlanceProps {
 
 export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: GlanceProps) {
     const { authFetch } = useContext(AuthContext);
+    const queryClient = useQueryClient();
     const setToastMessage = useToastStore(state => state.setMessage);
     const selection = useSelectedGlanceItems();
 
     useEffect(() => {
         selection.clearSelection();
     }, [selectedMailbox.path]);
+
+    const hydrateBodyCache = (mailboxPath: string, messages: EmailMessage[]) => {
+        for (const message of messages) {
+            queryClient.setQueryData(emailQueryKey(mailboxPath, message.uniqueId), message);
+        }
+    };
+
+    const collectUncachedUniqueIds = (mailboxPath: string, candidateUniqueIds: number[]): number[] => {
+        return candidateUniqueIds.filter(uniqueId => queryClient.getQueryData(emailQueryKey(mailboxPath, uniqueId)) === undefined);
+    };
 
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } = useInfiniteQuery({
         queryKey: glanceQueryKey(selectedMailbox.path),
@@ -56,6 +85,89 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
             pageParams: [...queryResult.pageParams].reverse()
         })
     });
+
+    // Background prefetch: once a page lands, walk the remaining UIDs in
+    // chunks so the IMAP connection is freed between batches and other user
+    // actions (mark read, move, click) can interleave. The abort controller
+    // tears the chain down when the user switches mailbox or unmounts.
+    //
+    // The effect re-runs every time `data` changes, which includes the refetch
+    // that follows a mutation (move, flag, etc.). Per-UID body cache lookups
+    // skip anything still warm, so the re-run only refetches bodies whose
+    // entries were evicted or whose UIDs are new since the last pass.
+    useEffect(() => {
+        if (status !== "success" || !data) {
+            return;
+        }
+
+        const mailboxPathForEffect = selectedMailbox.path;
+        const abortController = new AbortController();
+
+        // Background prefetch defers to anything the user actually asked for:
+        // a click that fired fetchSingleMessage shows up as an in-flight query
+        // under the ["email", ...] prefix, and a move/flag mutation shows up
+        // via isMutating. While either is running, sleeping here keeps the
+        // single IMAP connection free so the user's action takes the lock as
+        // soon as the in-flight chunk releases it.
+        const waitForUserActionIdle = async (): Promise<void> => {
+            while (!abortController.signal.aborted) {
+                const isUserBusy =
+                    queryClient.isFetching({ queryKey: ["email"] }) > 0 ||
+                    queryClient.isMutating() > 0;
+                if (!isUserBusy) {
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, USER_ACTION_POLL_INTERVAL_MS));
+            }
+        };
+
+        const runChunkedPrefetch = async (): Promise<void> => {
+            for (const page of data.pages) {
+                // page.items arrives oldest-first; flip to newest-first so the
+                // background warms the rows the user actually sees at the top
+                // of the list before working its way down.
+                const itemsNewestFirst = [...page.items].reverse();
+                const remainingUniqueIds = collectUncachedUniqueIds(
+                    mailboxPathForEffect,
+                    itemsNewestFirst.map(item => item.uniqueId)
+                );
+
+                for (let chunkStart = 0; chunkStart < remainingUniqueIds.length; chunkStart += BACKGROUND_CHUNK_SIZE) {
+                    await waitForUserActionIdle();
+                    if (abortController.signal.aborted) {
+                        return;
+                    }
+
+                    const chunkUniqueIds = remainingUniqueIds.slice(chunkStart, chunkStart + BACKGROUND_CHUNK_SIZE);
+
+                    try {
+                        const prefetchedMessages = await fetchBulkBodies({
+                            authFetch,
+                            mailboxPath: mailboxPathForEffect,
+                            uniqueIds: chunkUniqueIds,
+                            signal: abortController.signal
+                        });
+                        hydrateBodyCache(mailboxPathForEffect, prefetchedMessages);
+                    } catch (thrownError: any) {
+                        if (abortController.signal.aborted) {
+                            return;
+                        }
+                        console.warn("Background prefetch chunk failed:", thrownError?.message ?? thrownError);
+                    }
+
+                    if (BACKGROUND_CHUNK_DELAY_MS > 0 && chunkStart + BACKGROUND_CHUNK_SIZE < remainingUniqueIds.length) {
+                        await new Promise(resolve => setTimeout(resolve, BACKGROUND_CHUNK_DELAY_MS));
+                    }
+                }
+            }
+        };
+
+        runChunkedPrefetch();
+
+        return () => {
+            abortController.abort();
+        };
+    }, [data, status, selectedMailbox.path]);
 
     if (status === "pending") {
         return <GlanceShell selectedMailboxName={selectedMailbox.name} selectedMailboxPath={selectedMailbox.path} statusElement={<StatusComponent status="loading" message="fetching emails..." />} />;

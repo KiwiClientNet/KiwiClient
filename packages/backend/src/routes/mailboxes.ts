@@ -27,6 +27,12 @@ router.get("/mailboxes", async (_request: Request, response: Response<MailboxesR
         }
 
         const mailboxes = await imapInstance.getMailboxes();
+
+        // Get the number of unread messages in each mailbox
+        for (const mailbox of mailboxes) {
+            mailbox.unseen = await imapInstance.getUnseenCount(mailbox.path);
+        }
+
         imapPool.release(loginBody);
 
         response.json({ success: true, data: mailboxes });

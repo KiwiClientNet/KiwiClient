@@ -11,6 +11,7 @@ import type { MouseEventHandler } from "react";
 
 interface ButtonProps {
     text: string;
+    reverseColours?: boolean;
     disabled?: boolean;
     isLoading?: boolean;
     onClickFunction?: MouseEventHandler<HTMLButtonElement>;
@@ -19,13 +20,18 @@ interface ButtonProps {
     title?: string;
 }
 
-export function Button({ text, disabled = false, isLoading = false, onClickFunction, inlineImageSource = "", inlineImageAltText = "", title }: ButtonProps) {
+export function Button({ text, reverseColours = false, disabled = false, isLoading = false, onClickFunction, inlineImageSource = "", inlineImageAltText = "", title }: ButtonProps) {
+    const className = reverseColours ?
+        "whitespace-nowrap cursor-pointer w-full p-3 bg-kiwi-light-grey rounded-lg border border-solid text-kiwi-black hover:bg-kiwi-white disabled:bg-kiwi-light-black disabled:text-black disabled:cursor-default transition-colors duration-200 flex flex-row gap-2 justify-center items-center"
+        :
+        "whitespace-nowrap cursor-pointer w-full p-3 bg-kiwi-middle-black rounded-lg border border-solid text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-black disabled:cursor-default transition-colors duration-200 flex flex-row gap-2 justify-center items-center";
+
     return (
         <button
             onClick={onClickFunction}
             disabled={disabled}
             title={title}
-            className="whitespace-nowrap cursor-pointer w-full p-3 bg-kiwi-middle-black rounded-lg border border-solid text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-black disabled:cursor-default transition-colors duration-200 flex flex-row gap-2 justify-center items-center"
+            className={className}
         >
             {isLoading && (
                 <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
@@ -34,9 +40,7 @@ export function Button({ text, disabled = false, isLoading = false, onClickFunct
                 </svg>
             )}
             {text}
-            {inlineImageSource.length > 0 && (
-                <img src={inlineImageSource} alt={inlineImageAltText} width={24} height={24} loading="lazy" decoding="async" />
-            )}
+            {inlineImageSource.length > 0 && <img src={inlineImageSource} alt={inlineImageAltText} width={24} height={24} loading="lazy" decoding="async" />}
         </button>
     );
 }

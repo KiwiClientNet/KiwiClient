@@ -197,6 +197,27 @@ export class ImapInstance {
     }
 
     /**
+     * @brief Gets the number of unseen messages in a mailbox
+     * @param mailboxPath - The mailbox path to get the unseen count 
+     * @returns The unseen count, a negative number indicates an error
+     */
+    async getUnseenCount(mailboxPath: string): Promise<number> {
+        const ERROR = -1;
+        if (!this.isAuthenticated()) {
+            return ERROR;
+        }
+
+        try {
+            const status = await this.imapClient!.status(mailboxPath, { unseen: true });
+            return status.unseen ?? ERROR;
+
+        } catch (error: any) {
+            console.error(error);
+            return -1;
+        }
+    }
+
+    /**
      * @brief Finds the raw listing entry for a mailbox path, or null when absent.
      *
      * Used so callers can inspect the mailbox flags before attempting to
@@ -476,23 +497,21 @@ export class ImapInstance {
     }
 
     /**
-     * @brief Replaces every cid: reference in the HTML with an embedded data URI.
+     * @brief Replaces every `cid:` reference in the HTML with an embedded data URI.
      *
-     * Done at the backend boundary so that the frontend iframe can render
-     * inline images without needing to make additional authenticated requests.
+     * Pure synchronous companion to the parallel IMAP fetch; given the already
+     * downloaded image part buffers it walks the inline image node list and
+     * substitutes each `cid:<contentId>` occurrence with a base64 data URI so
+     * the frontend iframe can render inline images without further requests.
+     *
+     * @param html - The sanitised HTML body of the message, containing zero or more `cid:` references.
+     * @param inlineImages - The image body-structure nodes discovered earlier, each carrying a `part` id, MIME `type`, and content `id`.
+     * @param bodyParts - The map of body-part id to raw buffer returned by the parallel `fetchOne` call, or undefined when the fetch was skipped.
+     * @returns The HTML with every resolvable `cid:` reference rewritten to a data URI; unresolved references are left untouched.
      */
-    private async resolveInlineImages(messageUid: number, html: string, inlineImages: MessageStructureObject[]): Promise<InlineImageResolutionResult> {
-        if (inlineImages.length === 0 || !this.imapClient) {
-            return { html };
-        }
-
-        const partIds = inlineImages
-            .filter(node => node.part)
-            .map(node => node.part!);
-
-        const fetched = await this.imapClient.fetchOne(messageUid, { bodyParts: partIds }, { uid: true });
-        if (!fetched) {
-            return { html };
+    private applyInlineImages(html: string, inlineImages: MessageStructureObject[], bodyParts: Map<string, Buffer> | undefined): string {
+        if (!bodyParts) {
+            return html;
         }
 
         let resolvedHtml = html;
@@ -501,7 +520,7 @@ export class ImapInstance {
                 continue;
             }
 
-            const partBuffer = fetched.bodyParts?.get(imageNode.part);
+            const partBuffer = bodyParts.get(imageNode.part);
             if (!partBuffer) {
                 continue;
             }
@@ -513,7 +532,58 @@ export class ImapInstance {
             resolvedHtml = resolvedHtml.replaceAll(`cid:${cleanContentId}`, dataUri);
         }
 
-        return { html: resolvedHtml };
+        return resolvedHtml;
+    }
+
+    /**
+     * @brief Fetches envelope, flags, and body content for one UID assuming the mailbox lock is held.
+     *
+     * Carved out of getSingleMessage so getManyMessages can reuse the body-extraction
+     * logic without re-acquiring the mailbox lock for every UID. Callers must
+     * ensure the lock is acquired before invoking and released afterwards.
+     *
+     * @param messageUid - The IMAP UID of the message to fetch.
+     * @param mailboxPath - The IMAP path of the mailbox; used only to populate the returned DTO.
+     * @returns The full EmailMessage DTO, or null when the message has no envelope or cannot be fetched.
+     */
+    private async fetchMessageContent(messageUid: number, mailboxPath: string): Promise<EmailMessage | null> {
+        const fetchedMessage = await this.imapClient!.fetchOne(messageUid, {
+            envelope: true,
+            flags: true,
+            bodyStructure: true
+        }, { uid: true });
+
+        if (!fetchedMessage || !fetchedMessage.bodyStructure) {
+            return null;
+        }
+
+        const htmlPartId = this.findMessagePartByType(fetchedMessage.bodyStructure, "text/html");
+        const textPartId = this.findMessagePartByType(fetchedMessage.bodyStructure, "text/plain");
+
+        let htmlContent: string | undefined;
+        let textContent: string | undefined;
+
+        // Check for HTML part first, if it's there then use it otherwise look for the text part
+        if (htmlPartId) {
+            const inlineImages = this.findInlineImages(fetchedMessage.bodyStructure);
+            const inlineImagePartIds = inlineImages.filter(inlineImageNode => inlineImageNode.part).map(inlineImageNode => inlineImageNode.part!);
+
+            const [rawHtml, inlineFetched] = await Promise.all([
+                this.readMessagePartAsString(messageUid, htmlPartId),
+                inlineImagePartIds.length > 0 ? this.imapClient!.fetchOne(messageUid, { bodyParts: inlineImagePartIds }, { uid: true }) : Promise.resolve(null)
+            ]);
+
+            htmlContent = inlineFetched ? this.applyInlineImages(rawHtml, inlineImages, inlineFetched.bodyParts) : rawHtml;
+        } else if (textPartId) {
+            textContent = await this.readMessagePartAsString(messageUid, textPartId);
+        }
+
+        return mapEmailMessage({
+            message: fetchedMessage,
+            mailboxPath,
+            html: htmlContent,
+            text: textContent
+        });
     }
 
     /**
@@ -540,45 +610,62 @@ export class ImapInstance {
         const mailboxLock = await this.imapClient.getMailboxLock(mailboxPath);
 
         try {
-            const fetchedMessage = await this.imapClient.fetchOne(messageUid, {
-                envelope: true,
-                flags: true,
-                bodyStructure: true
-            }, { uid: true });
-
-            if (!fetchedMessage || !fetchedMessage.bodyStructure) {
-                return null;
-            }
-
-            const htmlPartId = this.findMessagePartByType(fetchedMessage.bodyStructure, "text/html");
-            const textPartId = this.findMessagePartByType(fetchedMessage.bodyStructure, "text/plain");
-
-            let htmlContent: string | undefined;
-            let textContent: string | undefined;
-
-            // Check for HTML part first, if it's there then use it otherwise look for the text part
-            if (htmlPartId) {
-                htmlContent = await this.readMessagePartAsString(messageUid, htmlPartId);
-
-                if (htmlContent) {
-                    const inlineImages = this.findInlineImages(fetchedMessage.bodyStructure);
-                    const resolved = await this.resolveInlineImages(messageUid, htmlContent, inlineImages);
-                    htmlContent = resolved.html;
-                }
-            } else if (textPartId) {
-                textContent = await this.readMessagePartAsString(messageUid, textPartId);
-            }
-
-            return mapEmailMessage({
-                message: fetchedMessage,
-                mailboxPath,
-                html: htmlContent,
-                text: textContent
-            });
-
+            return await this.fetchMessageContent(messageUid, mailboxPath);
         } finally {
             mailboxLock.release();
         }
+    }
+
+    /**
+     * @brief Fetches several messages within a single mailbox lock.
+     *
+     * Acquires the IMAP mailbox lock once and iterates the UIDs serially,
+     * reusing fetchMessageContent for each. Useful for prefetch flows that
+     * warm a frontend cache without paying one HTTP round trip and one lock
+     * acquire per message. Messages that fail to fetch are skipped silently
+     * so a single broken UID does not abort the whole batch.
+     *
+     * IMAP is a serial protocol per connection, so the loop cannot be
+     * parallelised by spawning concurrent fetchMessageContent calls on the
+     * same imapflow client.
+     *
+     * @param mailboxPath - The IMAP path of the containing mailbox.
+     * @param uniqueIds - The IMAP UIDs to fetch; an empty array is a no-op.
+     * @returns The resolved EmailMessage DTOs in the same order as uniqueIds, with any null entries dropped.
+     */
+    async getManyMessages(mailboxPath: string, uniqueIds: number[]): Promise<EmailMessage[]> {
+        for (const uniqueId of uniqueIds) {
+            assert(!isNaN(uniqueId) && uniqueId >= 0, "every uniqueId must be a non-negative number");
+        }
+
+        if (uniqueIds.length === 0) {
+            return [];
+        }
+
+        if (!this.imapClient || !this.isAuthenticated()) {
+            return [];
+        }
+
+        if (!await this.isMailboxSelectable(mailboxPath)) {
+            return [];
+        }
+
+        const mailboxLock = await this.imapClient.getMailboxLock(mailboxPath);
+        const results: EmailMessage[] = [];
+
+        try {
+            for (const uniqueId of uniqueIds) {
+                const messageUid = Math.round(uniqueId);
+                const message = await this.fetchMessageContent(messageUid, mailboxPath);
+                if (message) {
+                    results.push(message);
+                }
+            }
+        } finally {
+            mailboxLock.release();
+        }
+
+        return results;
     }
 
     /**

@@ -10,6 +10,7 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import {
     type EmailMessageResponse,
+    type EmailMessagesResponse,
     type EmptyResponse,
     type GlancePageResponse,
     GlancePageRequestSchema,
@@ -74,6 +75,47 @@ router.get("/mailboxes/:mailboxPath/messages", async (request: Request, response
     } catch (thrownError: any) {
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to list messages" });
+    }
+});
+
+router.get("/mailboxes/:mailboxPath/messages/bodies", async (request: Request, response: Response<EmailMessagesResponse>) => {
+    const mailboxPath = decodeMailboxPath(request.params.mailboxPath);
+    if (!mailboxPath) {
+        response.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "mailboxPath is required" });
+        return;
+    }
+
+    const rawUniqueIds = request.query.uniqueIds;
+    if (typeof rawUniqueIds !== "string" || rawUniqueIds.length === 0) {
+        response.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "uniqueIds query parameter is required" });
+        return;
+    }
+
+    const parsedUniqueIds = rawUniqueIds
+        .split(",")
+        .map(rawUniqueId => Number(rawUniqueId))
+        .filter(parsedUniqueId => Number.isFinite(parsedUniqueId) && parsedUniqueId >= 0);
+
+    if (parsedUniqueIds.length === 0) {
+        response.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "uniqueIds must contain at least one non-negative number" });
+        return;
+    }
+
+    const tokenPayload = response.locals.user as TokenPayload_t;
+
+    try {
+        const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
+        const imapInstance = await imapPool.acquire(loginBody);
+
+        try {
+            const messages = await imapInstance.getManyMessages(mailboxPath, parsedUniqueIds);
+            response.json({ success: true, data: messages });
+        } finally {
+            imapPool.release(loginBody);
+        }
+    } catch (thrownError: any) {
+        console.error(thrownError);
+        response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to fetch messages" });
     }
 });
 

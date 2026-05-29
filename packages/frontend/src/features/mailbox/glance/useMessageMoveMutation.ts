@@ -1,9 +1,26 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { CachedGlanceData } from "../types";
+/**
+ * @brief Hook that moves one or many messages from a source to a target mailbox.
+ *
+ * Removes the moved rows from the source glance optimistically and adjusts
+ * the sidebar unseen counts on both source and target so the user sees the
+ * change immediately. On failure the previous cache snapshot is restored.
+ */
+
 import { useContext } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AuthContext } from "../../../auth/AuthContext";
 import { patchMoveMessages } from "../../../api/messages";
 import { glanceQueryKey } from "./queryKeys";
+import type { CachedGlanceData } from "../types";
+import {
+    adjustMailboxUnseen,
+    cancelGlanceAndMailboxQueries,
+    countItemsInGlanceWithSeenState,
+    invalidateGlanceAndMailboxes,
+    rollbackGlanceAndMailboxes,
+    snapshotGlanceAndMailboxes,
+    type GlanceMutationSnapshot
+} from "./mutationCache";
 
 interface MoveMutationVariables {
     uniqueIds: number[];
@@ -11,54 +28,48 @@ interface MoveMutationVariables {
     mailboxPathSource: string;
 }
 
-interface UseMessageMoveMutationArguments {
-    mailboxPath: string;
-}
-
-export function useMessageMoveMutation({ mailboxPath }: UseMessageMoveMutationArguments) {
+export function useMessageMoveMutation() {
     const { authFetch } = useContext(AuthContext);
     const queryClient = useQueryClient();
 
-    return useMutation<void, Error, MoveMutationVariables, { previousData?: CachedGlanceData }>({
-        mutationFn: ({ mailboxPathSource, mailboxPathTarget, uniqueIds }) => patchMoveMessages({ authFetch, mailboxPathSource, mailboxPathTarget, uniqueIds }),
+    return useMutation<void, Error, MoveMutationVariables, GlanceMutationSnapshot>({
+        mutationFn: ({ mailboxPathSource, mailboxPathTarget, uniqueIds }) =>
+            patchMoveMessages({ authFetch, mailboxPathSource, mailboxPathTarget, uniqueIds }),
 
-        onMutate: async ({ uniqueIds }) => {
-            // Cancel any queries that have already gone out
-            const queryKey = glanceQueryKey(mailboxPath);
-            await queryClient.cancelQueries({ queryKey });
+        onMutate: async ({ uniqueIds, mailboxPathSource, mailboxPathTarget }) => {
+            const affectedMailboxPaths = [mailboxPathSource, mailboxPathTarget];
+            await cancelGlanceAndMailboxQueries(queryClient, affectedMailboxPaths);
+            const snapshot = snapshotGlanceAndMailboxes(queryClient, affectedMailboxPaths);
+            const targetUidSet = new Set(uniqueIds);
 
-            const previousData = queryClient.getQueryData<CachedGlanceData>(queryKey);
-
-            queryClient.setQueryData<CachedGlanceData>(queryKey, oldData => {
+            queryClient.setQueryData<CachedGlanceData>(glanceQueryKey(mailboxPathSource), oldData => {
                 if (!oldData) {
                     return oldData;
                 }
-
                 return {
                     ...oldData,
                     pages: oldData.pages.map(page => ({
                         ...page,
-                        // Need to remove it form the current list of glance items, check to see
-                        // if the current array of the items we want to get rid of contain each 
-                        // element and return the negation to signal its removal
-                        items: page.items.filter(item => !uniqueIds.includes(item.uniqueId))
+                        items: page.items.filter(item => !targetUidSet.has(item.uniqueId))
                     }))
                 };
-
             });
 
-            return { previousData };
+            const previouslyUnseenInSource = countItemsInGlanceWithSeenState(snapshot.glancesByMailboxPath.get(mailboxPathSource), uniqueIds, false);
+            adjustMailboxUnseen(queryClient, mailboxPathSource, -previouslyUnseenInSource);
+            adjustMailboxUnseen(queryClient, mailboxPathTarget, previouslyUnseenInSource);
+
+            return snapshot;
         },
 
-        onError: (_thrownError, _variables, context) => {
-            if (context?.previousData) {
-                queryClient.setQueryData(glanceQueryKey(mailboxPath), context.previousData);
+        onError: (_thrownError, _variables, snapshot) => {
+            if (snapshot) {
+                rollbackGlanceAndMailboxes(queryClient, snapshot);
             }
         },
 
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: glanceQueryKey(mailboxPath) });
+        onSettled: (_data, _error, { mailboxPathSource, mailboxPathTarget }) => {
+            invalidateGlanceAndMailboxes(queryClient, [mailboxPathSource, mailboxPathTarget]);
         }
-
     });
 }
