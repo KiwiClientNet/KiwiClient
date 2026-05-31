@@ -16,7 +16,7 @@ export interface MailboxTreeNode {
 }
 
 /**
- * @brief Titalises a mailbox name for display.
+ * @brief Titleise a mailbox name for display.
  *
  * @param rawName - The raw mailbox name as returned by the server.
  * @returns The display-cased name.
