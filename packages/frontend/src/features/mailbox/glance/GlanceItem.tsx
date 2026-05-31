@@ -77,7 +77,7 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
                 className="shrink-0 cursor-pointer p-1 hover:opacity-80 transition-opacity"
             >
                 {isStarred
-                    ? <StarIconSolid className="size-5 text-kiwi-info" />
+                    ? <StarIconSolid className="size-5 text-kiwi-warning" />
                     : <StarIconOutline className="size-5 opacity-60" />}
             </button>
 

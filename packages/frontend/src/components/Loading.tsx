@@ -6,8 +6,9 @@
  * before the mailbox tree has been fetched.
  */
 
-import { ArrowPathIcon, DocumentCheckIcon, InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { ArrowPathIcon, InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { ReverseLogo } from "./Logo";
+import { Inbox } from "lucide-react";
 
 type StatusKind = "loading" | "error" | "empty" | "info";
 
@@ -25,14 +26,14 @@ export function StatusComponent({ message, status }: StatusComponentProps) {
     const iconByStatus = {
         loading: <ArrowPathIcon className={`text-foreground ${iconBySize} animate-spin`} />,
         error: <XMarkIcon className={`text-kiwi-failure ${iconBySize}`} />,
-        empty: <DocumentCheckIcon className={`text-kiwi-success ${iconBySize}`} />,
+        empty: <Inbox className={`text-kiwi-info ${iconBySize}`} />,
         info: <InformationCircleIcon className={`text-kiwi-info ${iconBySize}`} />
     };
 
     const textColourByStatus = {
         loading: "text-foreground",
         error: "text-kiwi-failure",
-        empty: "text-kiwi-success",
+        empty: "text-kiwi-info",
         info: "text-kiwi-info"
     };
 

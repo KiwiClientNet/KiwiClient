@@ -77,7 +77,7 @@ export function GlanceToolbar({
                     <FolderInput className="size-5" />
                 </ToolbarIconButton>
                 <ToolbarIconButton title="Star" onClick={() => runBulkFlagUpdate([FLAGGED_FLAG], [])}>
-                    <StarIconSolid className="size-5 text-kiwi-info" />
+                    <StarIconSolid className="size-5 text-kiwi-warning" />
                 </ToolbarIconButton>
                 <ToolbarIconButton title="Unstar" onClick={() => runBulkFlagUpdate([], [FLAGGED_FLAG])}>
                     <StarIconOutline className="size-5" />

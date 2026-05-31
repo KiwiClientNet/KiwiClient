@@ -178,6 +178,12 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
     }
 
     const emailGlances = data.pages.flatMap(page => page.items).reverse();
+
+    // If there are no emails in the mailbox then notify the user
+    if  (emailGlances.length === 0) {
+        return <GlanceShell selectedMailboxName={selectedMailbox.name} selectedMailboxPath={selectedMailbox.path} statusElement={<StatusComponent status="empty" message="no messages found" />} />;
+    }
+
     const allLoadedEmailIds = emailGlances.map(item => item.uniqueId);
     const areAllSelected = selection.areAllSelected(allLoadedEmailIds);
 

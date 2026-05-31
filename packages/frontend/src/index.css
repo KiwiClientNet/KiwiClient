@@ -27,7 +27,8 @@
     --kiwi-white: #ffffff;
     --kiwi-success: #283429;
     --kiwi-failure: #7E262F;
-    --kiwi-info: #B58B00;
+    --kiwi-warning: #B58B00;
+    --kiwi-info: #1F3A5F;
 }
 
 @theme {
@@ -43,6 +44,7 @@
     --color-kiwi-white: var(--kiwi-white);
     --color-kiwi-success: var(--kiwi-success);
     --color-kiwi-failure: var(--kiwi-failure);
+    --color-kiwi-warning: var(--kiwi-warning);
     --color-kiwi-info: var(--kiwi-info);
 }
 
