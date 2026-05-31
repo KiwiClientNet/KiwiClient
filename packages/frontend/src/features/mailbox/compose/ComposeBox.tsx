@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
 
 export default function ComposeBox() {
-    const [maximized, setMaximized] = useState<boolean>(false);
+    const [fullScreen, setFullScreen] = useState<boolean>(false);
     const [minimized, setMinimized] = useState<boolean>(false);
     const hidden = useComposeEmailStore(state => state.hidden);
     const setHidden = useComposeEmailStore(state => state.setHidden);
@@ -20,7 +20,7 @@ export default function ComposeBox() {
                 "bg-kiwi-white text-kiwi-black shadow-2xl border border-kiwi-middle-grey",
                 "md:rounded-t-lg transition-all duration-300 ease-out",
                 // desktop size state
-                maximized
+                fullScreen
                     ? "md:inset-2 md:bottom-2 md:right-2 md:h-[calc(100dvh-1rem)] md:w-[calc(100vw-1rem)] md:left-2"
                     : minimized
                         ? "md:h-11 md:w-136"
@@ -36,18 +36,18 @@ export default function ComposeBox() {
                 <div className="flex items-center gap-4">
                     <MinusIcon
                         className="size-5 cursor-pointer hidden md:block"
-                        onClick={(event) => { event.stopPropagation(); setMinimized(previous => !previous); setMaximized(false) }}
+                        onClick={(event) => { event.stopPropagation(); setMinimized(previous => !previous); setFullScreen(false) }}
                     />
-                    {!maximized && (
+                    {!fullScreen && (
                         <ArrowsPointingOutIcon
                             className="size-5 cursor-pointer hidden md:block"
-                            onClick={(event) => { event.stopPropagation(); setMaximized(previous => !previous); }}
+                            onClick={(event) => { event.stopPropagation(); setFullScreen(previous => !previous); }}
                         />
                     )}
-                    {maximized && (
+                    {fullScreen && (
                         <ArrowsPointingInIcon
                             className="size-5 cursor-pointer hidden md:block"
-                            onClick={(event) => { event.stopPropagation(); setMaximized(previous => !previous); }}
+                            onClick={(event) => { event.stopPropagation(); setFullScreen(previous => !previous); }}
                         />
                     )}
                     <XMarkIcon
