@@ -1,6 +1,7 @@
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
+import EmailEditor from "./EmailEditor";
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
@@ -12,21 +13,12 @@ export default function ComposeBox() {
         <section
             className={[
                 hidden ? "hidden" : "flex",
-                // mobile: fullscreen sheet
                 "fixed inset-0 z-50 flex-col h-dvh w-full overflow-auto",
-                // desktop base chrome — overridden by maximized branch
                 "md:inset-auto md:bottom-0 md:right-4 md:overflow-hidden",
-                // visual chrome
                 "bg-kiwi-white text-kiwi-black shadow-2xl border border-kiwi-middle-grey",
                 "md:rounded-t-lg transition-all duration-300 ease-out",
                 // desktop size state
-                fullScreen
-                    ? "md:inset-2 md:bottom-2 md:right-2 md:h-[calc(100dvh-1rem)] md:w-[calc(100vw-1rem)] md:left-2"
-                    : minimized
-                        ? "md:h-11 md:w-136"
-                        : "md:h-160 md:w-136",
-                "md:max-h-full md:max-w-full",
-            ].join(" ")}
+                fullScreen ? "md:inset-2 md:bottom-2 md:right-2 md:h-[calc(100dvh-1rem)] md:w-[calc(100vw-1rem)] md:left-2" : minimized ? "md:h-11 md:w-136" : "md:h-160 md:w-136", "md:max-h-full md:max-w-full",].join(" ")}
         >
             <header
                 className="flex h-11 shrink-0 items-center justify-between bg-kiwi-light-grey px-3"
@@ -58,7 +50,7 @@ export default function ComposeBox() {
             </header>
 
             <div className={minimized ? "invisible" : "flex flex-1 flex-col overflow-y-auto p-4"}>
-                {/* fields + editor */}
+                <EmailEditor />
             </div>
         </section>
     );

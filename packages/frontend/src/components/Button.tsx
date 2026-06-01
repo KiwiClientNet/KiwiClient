@@ -28,7 +28,7 @@ export function Button({ text, reverseColours = false, disabled = false, isLoadi
             title={title}
             className={["whitespace-nowrap cursor-pointer w-full p-3 rounded-lg border border-solid disabled:cursor-default transition-colors duration-200 flex flex-row gap2 justify-center items-center",
                 reverseColours ? "bg-kiwi-light-grey text-kiwi-black hover:bg-kiwi-white disabled:bg-kiwi-light-black disabled:text-kiwi-black" :
-                    "bg-kiwi-middle-black text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-kiwi-black"].join()}
+                    "bg-kiwi-middle-black text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-kiwi-black"].join(" ")}
         >
             {isLoading && (
                 <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
