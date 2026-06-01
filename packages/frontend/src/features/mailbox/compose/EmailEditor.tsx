@@ -2,10 +2,11 @@ import { TextStyleKit } from '@tiptap/extension-text-style'
 import { EditorContent, useEditor } from '@tiptap/react'
 import Link from '@tiptap/extension-link'
 import StarterKit from '@tiptap/starter-kit'
+import Emoji from '@tiptap/extension-emoji'
 import MenuBar from './MenuBar'
 
 // See https://tiptap.dev/docs/editor/extensions/marks/link for link information
-const extensions = [TextStyleKit, StarterKit, Link.configure({
+const extensions = [TextStyleKit, StarterKit, Emoji, Link.configure({
     openOnClick: false,
     autolink: true,
     defaultProtocol: 'https',
@@ -68,16 +69,33 @@ const extensions = [TextStyleKit, StarterKit, Link.configure({
 export default function EmailEditor() {
     const editor = useEditor({
         extensions,
-        content: `\n\nSent using KiwiClient.`,
+        content: `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`,
         parseOptions: {
             preserveWhitespace: 'full',
         },
     })
 
     return (
-        <>
+        <div className="flex flex-1 flex-col gap-2 min-h-0">
+            <EditorContent
+                editor={editor}
+                className={
+                    'flex-1 min-h-40 rounded-md border border-kiwi-light-grey ' +
+                    'bg-kiwi-white p-3 text-sm leading-relaxed text-kiwi-black ' +
+                    'overflow-y-auto kiwi-scrollbar ' +
+                    'focus-within:border-kiwi-dark-grey ' +
+                    '[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full ' +
+                    '[&_.ProseMirror_a]:text-kiwi-info ' +
+                    '[&_.ProseMirror_a]:underline ' +
+                    '[&_.ProseMirror_a]:underline-offset-2 ' +
+                    '[&_.ProseMirror_a]:decoration-kiwi-info/40 ' +
+                    '[&_.ProseMirror_a]:cursor-pointer ' +
+                    '[&_.ProseMirror_a]:transition-colors ' +
+                    'hover:[&_.ProseMirror_a]:text-kiwi-info/80 ' +
+                    'hover:[&_.ProseMirror_a]:decoration-kiwi-info'
+                }
+            />
             <MenuBar editor={editor} />
-            <EditorContent className='p-2' editor={editor} />
-        </>
+        </div>
     )
 }

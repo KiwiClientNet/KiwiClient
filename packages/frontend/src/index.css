@@ -88,7 +88,14 @@
     }
 }
 
-/* Basic editor styles */
+/* Basic editor styles
+ *
+ * TipTap's Editor automatically adds the `tiptap` class to its root.
+ * Tailwind's preflight resets list-style, blockquote, hr, etc., so we
+ * restore them here. Without this, `toggleBulletList`, `toggleOrderedList`,
+ * and `toggleBlockquote` would change the DOM but the user would see
+ * nothing.
+ */
 .tiptap {
     :first-child {
         margin-top: 0;
@@ -98,12 +105,28 @@
     ul,
     ol {
         padding: 0 1rem;
-        margin: 1.25rem 1rem 1.25rem 0.4rem;
+        margin: 0.75rem 1rem 0.75rem 0.4rem;
 
         li p {
             margin-top: 0.25em;
             margin-bottom: 0.25em;
         }
+    }
+
+    ul {
+        list-style: disc;
+    }
+
+    ol {
+        list-style: decimal;
+    }
+
+    ul ul {
+        list-style: circle;
+    }
+
+    ul ul ul {
+        list-style: square;
     }
 
     /* Heading styles */
@@ -114,29 +137,28 @@
     h5,
     h6 {
         line-height: 1.1;
-        margin-top: 2.5rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
         text-wrap: pretty;
-    }
-
-    h1,
-    h2 {
-        margin-top: 3.5rem;
-        margin-bottom: 1.5rem;
+        font-weight: 600;
     }
 
     h1 {
-        font-size: 1.4rem;
+        font-size: 1.6rem;
     }
 
     h2 {
-        font-size: 1.2rem;
+        font-size: 1.35rem;
     }
 
     h3 {
+        font-size: 1.2rem;
+    }
+
+    h4 {
         font-size: 1.1rem;
     }
 
-    h4,
     h5,
     h6 {
         font-size: 1rem;
@@ -144,38 +166,43 @@
 
     /* Code and preformatted text styles */
     code {
-        background-color: var(--purple-light);
+        background-color: var(--kiwi-light-grey);
         border-radius: 0.4rem;
-        color: var(--black);
+        color: var(--kiwi-black);
         font-size: 0.85rem;
-        padding: 0.25em 0.3em;
+        padding: 0.15em 0.35em;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
     pre {
-        background: var(--black);
+        background: var(--kiwi-dark-black);
         border-radius: 0.5rem;
-        color: var(--white);
-        font-family: 'JetBrainsMono', monospace;
-        margin: 1.5rem 0;
+        color: var(--kiwi-white);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        margin: 1rem 0;
         padding: 0.75rem 1rem;
+        overflow-x: auto;
 
         code {
             background: none;
             color: inherit;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             padding: 0;
+            font-family: inherit;
         }
     }
 
     blockquote {
-        border-left: 3px solid var(--gray-3);
-        margin: 1.5rem 0;
-        padding-left: 1rem;
+        border-left: 3px solid var(--kiwi-middle-grey);
+        margin: 1rem 0;
+        padding: 0.25rem 0 0.25rem 1rem;
+        color: var(--kiwi-dark-grey);
+        font-style: italic;
     }
 
     hr {
         border: none;
-        border-top: 1px solid var(--gray-2);
-        margin: 2rem 0;
+        border-top: 1px solid var(--kiwi-light-grey);
+        margin: 1.5rem 0;
     }
 }
