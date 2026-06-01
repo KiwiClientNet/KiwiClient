@@ -23,7 +23,7 @@ import {
     getEnv,
     issueAccessToken,
     issueRefreshToken,
-    type TokenPayload_t,
+    type TokenPayload,
     verifyRefreshToken
 } from "../auth_sessions.js";
 import { ImapInstance } from "../imap/client.js";
@@ -42,6 +42,7 @@ const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface GoogleTokenExchangeResult {
     accessToken: string;
+    refreshToken: string;
     idToken: string;
 }
 
@@ -59,7 +60,7 @@ const router = Router();
  */
 function sendAuthSuccessResponse(
     response: Response<AuthResponse>,
-    payload: TokenPayload_t,
+    payload: TokenPayload,
     rememberMe: boolean
 ): void {
     const accessToken = issueAccessToken(payload);
@@ -76,7 +77,7 @@ function sendAuthSuccessResponse(
 }
 
 /**
- * @brief Probes the IMAP server with the given credentials, then disconnects.
+ * @brief Probes the IMAP server with the given credentials.
  *
  * Used at login time to fail fast on bad credentials before any token is
  * issued. The connection itself is discarded; the connection pool will
@@ -111,18 +112,20 @@ async function exchangeGoogleAuthCode(authorisationCode: string): Promise<Google
             client_id: GOOGLE_CLIENT_ID,
             client_secret: GOOGLE_CLIENT_SECRET,
             redirect_uri: "postmessage",
-            grant_type: "authorization_code"
+            grant_type: "authorization_code",
+            access_type: "offline"
         })
     });
 
     const googleTokens = await googleResponse.json();
 
-    if (!googleTokens.access_token || !googleTokens.id_token) {
+    if (!googleTokens.access_token || !googleTokens.id_token || !googleTokens.refresh_token) {
         throw new Error("Google did not return both access and id tokens");
     }
 
     return {
         accessToken: googleTokens.access_token,
+        refreshToken: googleTokens.refresh_token,
         idToken: googleTokens.id_token
     };
 }
@@ -149,7 +152,7 @@ router.post("/login", loginRateLimiter, async (request: Request<{}, {}, ServerLo
         return;
     }
 
-    const payload: TokenPayload_t = {
+    const payload: TokenPayload = {
         email,
         encryptedPassword: encrypt(password),
         serverType: "PRIVATE"
@@ -170,7 +173,7 @@ router.post("/google/callback", loginRateLimiter, async (request: Request<{}, {}
     }
 
     try {
-        const { accessToken: googleAccessToken, idToken } = await exchangeGoogleAuthCode(requestParseResult.data.accessCode);
+        const { accessToken: googleAccessToken, refreshToken: googleRefreshToken, idToken } = await exchangeGoogleAuthCode(requestParseResult.data.accessCode);
 
         const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
         const ticket = await oauthClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
@@ -186,6 +189,7 @@ router.post("/google/callback", loginRateLimiter, async (request: Request<{}, {}
         const loginBody: GoogleLoginBody = {
             serverType: "GMAIL",
             email: userEmail,
+            googleRefreshToken: googleRefreshToken,
             accessCode: googleAccessToken
         };
 
@@ -196,9 +200,10 @@ router.post("/google/callback", loginRateLimiter, async (request: Request<{}, {}
             return;
         }
 
-        const payload: TokenPayload_t = {
+        const payload: TokenPayload = {
             email: userEmail,
             encryptedPassword: encrypt(googleAccessToken),
+            oAuth2RefreshToken: googleRefreshToken ? encrypt(googleRefreshToken) : undefined,
             serverType: "GMAIL"
         };
 

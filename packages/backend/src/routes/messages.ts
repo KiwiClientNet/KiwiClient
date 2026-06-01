@@ -18,7 +18,7 @@ import {
     MessageMoveUpdateSchema,
     MessageMoveUpdate
 } from "@KiwiClient/shared";
-import { decrypt, type TokenPayload_t } from "../auth_sessions.js";
+import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -54,7 +54,7 @@ router.get("/mailboxes/:mailboxPath/messages", async (request: Request, response
         return;
     }
 
-    const tokenPayload = response.locals.user as TokenPayload_t;
+    const tokenPayload = response.locals.user as TokenPayload;
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
@@ -101,7 +101,7 @@ router.get("/mailboxes/:mailboxPath/messages/bodies", async (request: Request, r
         return;
     }
 
-    const tokenPayload = response.locals.user as TokenPayload_t;
+    const tokenPayload = response.locals.user as TokenPayload;
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
@@ -132,7 +132,7 @@ router.get("/mailboxes/:mailboxPath/messages/:uniqueId", async (request: Request
         return;
     }
 
-    const tokenPayload = response.locals.user as TokenPayload_t;
+    const tokenPayload = response.locals.user as TokenPayload;
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
@@ -170,7 +170,7 @@ router.patch("/mailboxes/:mailboxPath/messages/flags/change", async (request: Re
         return;
     }
 
-    const tokenPayload = response.locals.user as TokenPayload_t;
+    const tokenPayload = response.locals.user as TokenPayload;
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
@@ -213,7 +213,7 @@ router.patch("/mailboxes/:mailboxPath/messages/move", async (request: Request<{ 
         return;
     }
 
-    const tokenPayload = response.locals.user as TokenPayload_t;
+    const tokenPayload = response.locals.user as TokenPayload;
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);

@@ -8,7 +8,7 @@
 
 import type { Request, Response, NextFunction } from "express";
 import type { ApiError } from "@KiwiClient/shared";
-import { type TokenPayload_t, verifyAccessToken } from "../auth_sessions.js";
+import { type TokenPayload, verifyAccessToken } from "../auth_sessions.js";
 
 const BEARER_PREFIX = "Bearer ";
 
@@ -28,7 +28,7 @@ export function requireAuth(request: Request, response: Response<ApiError>, next
     const accessToken = authorisationHeader.slice(BEARER_PREFIX.length);
 
     try {
-        const payload: TokenPayload_t = verifyAccessToken(accessToken);
+        const payload: TokenPayload = verifyAccessToken(accessToken);
         response.locals.user = payload;
         next();
     } catch {

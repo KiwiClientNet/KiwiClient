@@ -5,7 +5,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { MailboxesResponse } from "@KiwiClient/shared";
-import { decrypt, type TokenPayload_t } from "../auth_sessions.js";
+import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
 import { ImapInstance } from "../imap/client.js";
@@ -15,7 +15,7 @@ const router = Router();
 router.use(requireAuth);
 
 router.get("/mailboxes", async (_request: Request, response: Response<MailboxesResponse>) => {
-    const tokenPayload = response.locals.user as TokenPayload_t;
+    const tokenPayload = response.locals.user as TokenPayload;
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);

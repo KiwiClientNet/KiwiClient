@@ -9,7 +9,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { ApiError } from "@KiwiClient/shared";
-import { decrypt, type TokenPayload_t } from "../auth_sessions.js";
+import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -36,7 +36,7 @@ router.get("/mailboxes/:mailboxPath/messages/:uniqueId/parts/:partId", async (re
         return;
     }
 
-    const tokenPayload = response.locals.user as TokenPayload_t;
+    const tokenPayload = response.locals.user as TokenPayload;
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);

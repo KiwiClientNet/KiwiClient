@@ -30,6 +30,7 @@ export function GoogleLogin({ isDisabled, setIsDisabled }: GoogleLoginProps) {
     const triggerGoogleLogin = useGoogleLogin({
         flow: "auth-code",
         scope: GMAIL_SCOPE,
+        ux_mode: "popup",
         onSuccess: async (codeResponse) => {
             try {
                 const requestBody: GoogleLoginRequestBody = { accessCode: codeResponse.code };
@@ -40,7 +41,6 @@ export function GoogleLogin({ isDisabled, setIsDisabled }: GoogleLoginProps) {
                     console.error("Google login failed:", responseBody.message);
                     return;
                 }
-
                 login(responseBody.accessToken, responseBody.email ?? "");
                 navigate("/mail");
             } finally {

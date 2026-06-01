@@ -33,9 +33,10 @@ const JWT_SECRET = getEnv("JWT_SECRET");
 const JWT_REFRESH_SECRET = getEnv("JWT_REFRESH_SECRET");
 const ENCRYPT_KEY = Buffer.from(getEnv("ENCRYPT_KEY"), "hex");
 
-export interface TokenPayload_t {
+export interface TokenPayload {
     email: string;
     encryptedPassword: string;
+    oAuth2RefreshToken?: string;
     serverType: "GMAIL" | "PRIVATE";
 }
 
@@ -82,7 +83,7 @@ export function decrypt(text: string): string {
  * @param expiryMinutes - Lifetime in minutes; the default matches a refresh-on-401 flow.
  * @returns The signed token string.
  */
-export function issueAccessToken(payload: TokenPayload_t, expiryMinutes: number = 15): string {
+export function issueAccessToken(payload: TokenPayload, expiryMinutes: number = 15): string {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: `${Math.round(expiryMinutes)}m` });
 }
 
@@ -92,7 +93,7 @@ export function issueAccessToken(payload: TokenPayload_t, expiryMinutes: number 
  * No expiry is set on the token itself; the rememberMe cookie's maxAge is
  * what bounds the session lifetime in the browser.
  */
-export function issueRefreshToken(payload: TokenPayload_t): string {
+export function issueRefreshToken(payload: TokenPayload): string {
     return jwt.sign(payload, JWT_REFRESH_SECRET);
 }
 
@@ -103,8 +104,8 @@ export function issueRefreshToken(payload: TokenPayload_t): string {
  * @returns The decoded token payload.
  * @throws Error when the token is invalid, expired, or tampered with.
  */
-export function verifyAccessToken(tokenToCheck: string): TokenPayload_t {
-    const { iat, exp, ...payload } = jwt.verify(tokenToCheck, JWT_SECRET) as TokenPayload_t & { iat?: number; exp?: number };
+export function verifyAccessToken(tokenToCheck: string): TokenPayload {
+    const { iat, exp, ...payload } = jwt.verify(tokenToCheck, JWT_SECRET) as TokenPayload & { iat?: number; exp?: number };
     return payload;
 }
 
@@ -115,7 +116,7 @@ export function verifyAccessToken(tokenToCheck: string): TokenPayload_t {
  * @returns The decoded token payload.
  * @throws Error when the token is invalid or tampered with.
  */
-export function verifyRefreshToken(tokenToCheck: string): TokenPayload_t {
-    const { iat, exp, ...payload } = jwt.verify(tokenToCheck, JWT_REFRESH_SECRET) as TokenPayload_t & { iat?: number; exp?: number };
+export function verifyRefreshToken(tokenToCheck: string): TokenPayload {
+    const { iat, exp, ...payload } = jwt.verify(tokenToCheck, JWT_REFRESH_SECRET) as TokenPayload & { iat?: number; exp?: number };
     return payload;
 }
