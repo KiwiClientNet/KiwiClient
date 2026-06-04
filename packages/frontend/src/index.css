@@ -53,6 +53,9 @@
         @apply bg-kiwi-dark-black text-kiwi-white antialiased;
         font-family: var(--font-sans);
     }
+    a {
+        @apply underline duration-200 transition-all hover:text-kiwi-light-black
+    }
 }
 
 .kiwi-scrollbar {

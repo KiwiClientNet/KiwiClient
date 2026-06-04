@@ -23,6 +23,7 @@
         "helmet": "^8.1.0",
         "imapflow": "^1.2.12",
         "jsonwebtoken": "^9.0.3",
+        "nodemailer": "^8.0.7",
         "resend": "^6.12.3"
     },
     "devDependencies": {

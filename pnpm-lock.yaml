@@ -52,6 +52,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
+      nodemailer:
+        specifier: ^8.0.7
+        version: 8.0.7
       resend:
         specifier: ^6.12.3
         version: 6.12.3

@@ -1,17 +1,25 @@
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { PaperAirplaneIcon, PaperClipIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import EmailEditor from "./EmailEditor";
 import MessageForm from "./MessageForm";
 import { Button } from "../../../components/Button";
+import { type EmailToSend } from "@KiwiClient/shared";
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
     const [minimized, setMinimized] = useState<boolean>(false);
     const hidden = useComposeEmailStore(state => state.hidden);
     const setHidden = useComposeEmailStore(state => state.setHidden);
+    const [emailToSend, setEmailToSend] = useState<EmailToSend>();
 
+    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        // Backend call to send here
+        console.log(emailToSend);
+    }
 
     useEffect(() => {
         return () => setHidden(true);

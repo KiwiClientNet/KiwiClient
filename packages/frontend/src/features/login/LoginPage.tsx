@@ -9,7 +9,7 @@
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../auth/AuthContext";
-import { ReverseLogo } from "../../components/Logo";
+import Logo from "../../components/Logo";
 import { GoogleLogin } from "./GoogleLogin";
 import { LoginForm } from "./LoginForm";
 
@@ -28,7 +28,7 @@ export function LoginPage() {
         <div className="min-h-dvh flex flex-col lg:flex-row">
             <div className="w-full lg:w-1/2 px-6 pt-8 pb-4 sm:px-12 sm:pt-12 lg:p-16 flex flex-col justify-center items-center lg:items-start text-center lg:text-left">
                 <nav className="mb-4 sm:mb-8 lg:mb-12">
-                    <ReverseLogo className="w-24 h-24 sm:w-40 sm:h-40 lg:w-72 lg:h-72" />
+                    <Logo className="w-24 h-24 sm:w-40 sm:h-40 lg:w-72 lg:h-72" reverseLogo={true} />
                 </nav>
 
                 <div className="max-w-xl">

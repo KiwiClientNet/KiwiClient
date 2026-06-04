@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { ReverseLogo } from "../../components/Logo";
 import { useEffect, useState } from "react";
+import Logo from "../../components/Logo";
 
 export default function UnsubscribeFailed() {
 
@@ -23,7 +23,7 @@ export default function UnsubscribeFailed() {
 
         <div className="flex flex-col items-center justify-center min-h-screen antialiased px-4 py-12 pb-64">
             <div className="flex flex-col sm:flex-row items-center">
-                <ReverseLogo className="w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64" />
+                <Logo className="w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64" reverseLogo={true} />
                 <h1 className="sm:text-5xl lg:text-7xl text-center sm:text-left font-bold"> KiwiClient </h1>
             </div>
             <h2 className="text-xl sm:text-xl lg:text-2xl mt-3 text-center font-bold">Something went wrong while trying to unsubscribe you</h2>

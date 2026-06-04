@@ -32,7 +32,7 @@ export function Emailbox({ onBack }: EmailboxProps) {
                     </button>
                 )}
                 <span className="text-sm opacity-70">
-                    ====&gt; Selection and tooling bar 2
+                    TODO: Selection and tooling bar for individual emails
                 </span>
             </div>
             <div className="flex-1 min-h-0 rounded-3xl mt-2 bg-kiwi-light-grey p-3 text-kiwi-black overflow-auto">

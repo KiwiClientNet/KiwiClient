@@ -128,7 +128,7 @@ export function MailboxPage() {
                 </header>
 
                 <div className="hidden md:block m-3 p-2 bg-kiwi-middle-black rounded-3xl">
-                    ====&gt; Message search div to be implemented here
+                    Message search coming soon!
                 </div>
 
                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row lg:gap-2 lg:m-3 lg:p-2 lg:bg-kiwi-middle-black lg:rounded-3xl">

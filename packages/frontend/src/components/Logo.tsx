@@ -10,40 +10,24 @@ import { Link } from "react-router-dom";
 import reverseLogoImage from "../assets/logos/kiwi-logo-white.svg";
 import logoImage from "../assets/logos/kiwi-logo.svg";
 
-interface LogoProps {
+interface LogoProps extends React.HTMLAttributes<HTMLImageElement> {
     width?: number;
     height?: number;
-    className?: string;
+    link?: boolean;
+    reverseLogo?: boolean;
 }
 
-export function ReverseLogo({ width, height, className }: LogoProps) {
-    return (
-        <Link to="/">
-            <img
-                src={reverseLogoImage}
-                alt="A reverse KiwiClient logo - a white kiwi bird"
-                width={width}
-                height={height}
-                className={className}
-                loading="lazy"
-                decoding="async"
-            />
-        </Link>
+export default function Logo({ width = 200, height = 200, link = true, reverseLogo = false }: LogoProps) {
+    const baseImage = (
+        <img
+            src={reverseLogo ? reverseLogoImage : logoImage}
+            alt="The KiwiClient logo - a black kiwi bird"
+            width={width}
+            height={height}
+            loading="lazy"
+            decoding="async"
+        />
     );
-}
-
-export function Logo({ width, height, className }: LogoProps) {
-    return (
-        <Link to="/">
-            <img
-                src={logoImage}
-                alt="The KiwiClient logo - a black kiwi bird"
-                width={width}
-                height={height}
-                className={className}
-                loading="lazy"
-                decoding="async"
-            />
-        </Link>
-    );
+    const elementToReturn = link ? (<Link to="/"> {baseImage} </Link>) : baseImage;
+    return elementToReturn;
 }

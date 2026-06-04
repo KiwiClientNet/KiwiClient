@@ -1,5 +1,6 @@
-import { useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useComposeEmailStore } from '../../../store/composeEmailStore';
 
 /**
  * Permissive but not RFC-5322 strict. Catches typos like missing `@` or TLD,
@@ -34,9 +35,10 @@ interface RecipientsRowProps {
     value: Recipient[];
     onChange: (next: Recipient[]) => void;
     rightSlot?: ReactNode;
+    inputRef?: RefObject<HTMLInputElement | null>;
 }
 
-function RecipientsRow({ id, label, value, onChange, rightSlot }: RecipientsRowProps) {
+function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: RecipientsRowProps) {
     const [draft, setDraft] = useState('');
 
     function commitDraft() {
@@ -114,6 +116,7 @@ function RecipientsRow({ id, label, value, onChange, rightSlot }: RecipientsRowP
                 ))}
                 <input
                     id={id}
+                    ref={inputRef}
                     type="text"
                     value={draft}
                     onChange={event => setDraft(event.target.value)}
@@ -143,6 +146,15 @@ export default function MessageForm() {
     const [showBcc, setShowBcc] = useState(false);
     const [subject, setSubject] = useState('');
 
+    const hidden = useComposeEmailStore(state => state.hidden);
+    const toInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!hidden) {
+            toInputRef.current?.focus();
+        }
+    }, [hidden]);
+
     return (
         <form
             className="mx-4 mt-4 flex flex-col rounded-md border border-kiwi-light-grey bg-kiwi-white text-kiwi-black overflow-hidden"
@@ -153,6 +165,7 @@ export default function MessageForm() {
                 id="recipients-to"
                 label="To"
                 value={to}
+                inputRef={toInputRef}
                 onChange={setTo}
                 rightSlot={
                     showCc && showBcc ? null : (

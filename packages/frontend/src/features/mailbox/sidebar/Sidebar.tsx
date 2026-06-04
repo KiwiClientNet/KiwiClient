@@ -11,11 +11,11 @@ import { useNavigate } from "react-router-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AuthContext } from "../../../auth/AuthContext";
 import { BorderlessButton, Button } from "../../../components/Button";
-import { ReverseLogo } from "../../../components/Logo";
 import type { MailboxTreeNode } from "../../../domain/mailboxTree";
 import type { MailboxSelection } from "../types";
 import { SidebarItem } from "./SidebarItem";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
+import Logo from "../../../components/Logo";
 
 interface SidebarProps {
     mailboxTree: MailboxTreeNode[];
@@ -54,7 +54,7 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                 `}
             >
                 <div className="flex items-center justify-between pl-4 md:justify-center">
-                    <ReverseLogo className="w-16 h-16 md:w-24 md:h-24" />
+                    <Logo reverseLogo={true} width={100} height={100}  />
                     <button
                         type="button"
                         onClick={onClose}
@@ -83,7 +83,6 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                 </nav>
 
                 <div className="flex w-full items-center gap-2 px-2 pb-2 pt-2 border-t border-kiwi-light-black md:border-0">
-                    <BorderlessButton text="Settings?" onClickFunction={handleLogout} />
                     <BorderlessButton text="Logout" onClickFunction={handleLogout} />
                 </div>
             </aside>
