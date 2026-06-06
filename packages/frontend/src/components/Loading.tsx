@@ -49,7 +49,7 @@ export function MailboxPageLoading({ Status }: { Status: React.JSX.Element }) {
     return (
         <div className="grid h-screen place-items-center bg-background">
             <div className="flex flex-col items-center gap-6">
-                <Logo width={300} height={300} reverseLogo={true} />
+                <Logo link={false} width={300} height={300} reverseLogo={true} />
                 <div className="flex items-center">
                     {Status}
                 </div>

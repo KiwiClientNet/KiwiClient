@@ -19,8 +19,8 @@ export function Emailbox({ onBack }: EmailboxProps) {
     const selected = useSelectedEmailStore(state => state.selected);
 
     return (
-        <div className="h-full w-full rounded-none lg:rounded-3xl bg-kiwi-black p-2 flex flex-col min-h-0">
-            <div className="flex items-center gap-2 rounded-3xl bg-kiwi-black p-2 shrink-0">
+        <div className="h-full w-full rounded-none lg:rounded-xl bg-kiwi-black p-2 flex flex-col min-h-0">
+            <div className="flex items-center gap-2 rounded-xl bg-kiwi-black p-2 shrink-0">
                 {selected && onBack && (
                     <button
                         type="button"
@@ -35,7 +35,7 @@ export function Emailbox({ onBack }: EmailboxProps) {
                     TODO: Selection and tooling bar for individual emails
                 </span>
             </div>
-            <div className="flex-1 min-h-0 rounded-3xl mt-2 bg-kiwi-light-grey p-3 text-kiwi-black overflow-auto">
+            <div className="flex-1 min-h-0 rounded-xl mt-2 bg-kiwi-light-grey p-3 text-kiwi-black overflow-auto">
                 {selected ? (
                     <EmailIframe selected={selected} />
                 ) : (

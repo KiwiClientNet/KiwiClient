@@ -73,7 +73,7 @@ export function GlanceToolbar({
                 <ToolbarIconButton title="Mark unread" onClick={() => runBulkFlagUpdate([], [SEEN_FLAG])}>
                     <Mail className="size-5" />
                 </ToolbarIconButton>
-                <ToolbarIconButton title="Move mail to" onClick={() => console.log("moving")}>
+                <ToolbarIconButton title="Move mail to" onClick={() => alert("Moving mail coming soon!")}>
                     <FolderInput className="size-5" />
                 </ToolbarIconButton>
                 <ToolbarIconButton title="Star" onClick={() => runBulkFlagUpdate([FLAGGED_FLAG], [])}>

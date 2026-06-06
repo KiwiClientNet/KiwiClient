@@ -82,6 +82,7 @@ function Footer() {
                     text="Send"
                     buttonSize="md"
                     icon={<PaperAirplaneIcon className="size-4 -rotate-45" aria-hidden="true" />}
+                    onClick={() => alert("Sending coming soon!")}
                 />
                 <Button
                     text=""
@@ -89,6 +90,7 @@ function Footer() {
                     title="Attach file"
                     reverseColours
                     icon={<PaperClipIcon className="size-5" aria-hidden="true" />}
+                    onClick={() => alert("Attachments coming soon!")}
                 />
             </div>
             <Button
@@ -97,6 +99,7 @@ function Footer() {
                 title="Discard draft"
                 reverseColours
                 icon={<TrashIcon className="size-5" aria-hidden="true" />}
+                onClick={() => alert("Drafts coming soon!")}
             />
         </footer>
     );

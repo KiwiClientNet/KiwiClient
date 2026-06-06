@@ -77,6 +77,32 @@
     background: transparent;
 }
 
+/* Scrollbar tuned for light surfaces (the white email reading pane). The dark
+ * theme's faint-grey thumb is invisible on white, so this variant uses a dark
+ * translucent thumb that reads against a light background. */
+.kiwi-scrollbar-on-light {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
+}
+
+.kiwi-scrollbar-on-light::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.kiwi-scrollbar-on-light::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 9999px;
+}
+
+.kiwi-scrollbar-on-light::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.kiwi-scrollbar-on-light::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 @layer utilities {
     .no-scrollbar::-webkit-scrollbar {
         display: none;
