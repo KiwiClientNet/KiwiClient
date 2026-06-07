@@ -31,8 +31,6 @@ export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFe
         onFetchNextPage();
     };
 
-    // TODO: If no emails, return something to say that!
-
     return (
         <div className="flex flex-col no-scrollbar overflow-y-scroll h-full max-w-full flex-1 pr-1 min-h-0 shrink-0">
             {emailGlances.map((emailGlance, index) => (

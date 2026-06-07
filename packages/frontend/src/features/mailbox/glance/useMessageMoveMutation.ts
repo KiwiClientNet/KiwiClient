@@ -21,6 +21,7 @@ import {
     snapshotGlanceAndMailboxes,
     type GlanceMutationSnapshot
 } from "./mutationCache";
+import { mailboxesQueryKey } from "../queryKeys";
 
 interface MoveMutationVariables {
     uniqueIds: number[];
@@ -46,6 +47,7 @@ export function useMessageMoveMutation() {
                 if (!oldData) {
                     return oldData;
                 }
+                 
                 return {
                     ...oldData,
                     pages: oldData.pages.map(page => ({
@@ -58,6 +60,9 @@ export function useMessageMoveMutation() {
             const previouslyUnseenInSource = countItemsInGlanceWithSeenState(snapshot.glancesByMailboxPath.get(mailboxPathSource), uniqueIds, false);
             adjustMailboxUnseen(queryClient, mailboxPathSource, -previouslyUnseenInSource);
             adjustMailboxUnseen(queryClient, mailboxPathTarget, previouslyUnseenInSource);
+
+            // Invalidate the cache once everything has moved
+            invalidateGlanceAndMailboxes(queryClient, [mailboxPathSource, mailboxPathTarget]);
 
             return snapshot;
         },
