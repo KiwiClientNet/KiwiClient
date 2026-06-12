@@ -87,13 +87,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setEmail(userEmail);
     }, []);
 
-    const logout = useCallback(async () => {
-        await apiFetch("/api/logout", { method: "POST" }).catch(() => undefined);
+    /**
+     * @brief Clears every trace of the session: token, identity, and cached data.
+     *
+     * Shared by the explicit logout and the failed-refresh path so a dead
+     * session never leaves another account's emails in the query cache.
+     */
+    const clearSession = useCallback(() => {
         setAccessToken(null);
         setEmail("");
         useSelectedEmailStore.getState().clear();
         queryClient.clear();
     }, [queryClient]);
+
+    const logout = useCallback(async () => {
+        await apiFetch("/api/logout", { method: "POST" }).catch(() => undefined);
+        clearSession();
+    }, [clearSession]);
 
     /**
      * @brief Performs an API call with the current access token, retrying once on 401.
@@ -110,8 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const refreshed = await refreshAccessToken();
         if (!refreshed || !refreshed.accessToken) {
-            setAccessToken(null);
-            setEmail("");
+            clearSession();
             return initialResponse;
         }
 
@@ -119,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessTokenReference.current = refreshed.accessToken;
 
         return apiFetch(endpoint, { ...options, accessToken: refreshed.accessToken });
-    }, []);
+    }, [clearSession]);
 
     return (
         <AuthContext value={{ email, accessToken, loading, login, logout, authFetch }}>

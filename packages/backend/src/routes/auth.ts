@@ -23,18 +23,19 @@ import {
     getEnv,
     issueAccessToken,
     issueRefreshToken,
+    REFRESH_TOKEN_COOKIE_NAME,
     type TokenPayload,
     verifyRefreshToken
 } from "../auth_sessions.js";
 import { ImapInstance } from "../imap/client.js";
+import { SmtpInstance } from "../smtp/client.js";
 import { OAuth2Client } from "google-auth-library";
-import { getErrorResponseFromStatus } from "../utils/status.js";
+import { ClientStatus, getErrorResponseFromStatus } from "../utils/status.js";
 import { loginRateLimiter, refreshRateLimiter } from "../middleware/rateLimiter.js";
-import { imapPool } from "../connection_pool.js";
+import { imapPool, smtpPool } from "../connection_pool.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { decrypt } from "../auth_sessions.js";
 
-const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 const GOOGLE_CLIENT_ID = getEnv("GOOGLE_CLIENT_ID");
 const GOOGLE_CLIENT_SECRET = getEnv("GOOGLE_CLIENT_SECRET");
 
@@ -86,10 +87,24 @@ function sendAuthSuccessResponse(
  * @param loginBody - The server-specific login payload to test.
  * @returns The terminal IMAP status reached during the probe.
  */
-async function probeImapCredentials(loginBody: ServerLoginBody | GoogleLoginBody): Promise<ImapInstance.Status> {
+async function probeImapCredentials(loginBody: ServerLoginBody | GoogleLoginBody): Promise<ClientStatus> {
     const imapInstance = new ImapInstance();
     const status = await imapInstance.loginToEmailServer(loginBody);
     await imapInstance.logoutFromEmailServer();
+    return status;
+}
+
+/**
+ * @brief Probes the SMTP server with the given credentials.
+ *
+ * Mirrors probeImapCredentials so a login only succeeds when the user can
+ * both receive and send; a wrong SMTP host would otherwise surface as a
+ * confusing failure on the first attempt to send an email.
+ */
+async function probeSmtpCredentials(loginBody: ServerLoginBody | GoogleLoginBody): Promise<ClientStatus> {
+    const smtpInstance = new SmtpInstance();
+    const status = await smtpInstance.loginToEmailServer(loginBody);
+    await smtpInstance.logoutFromEmailServer();
     return status;
 }
 
@@ -141,21 +156,35 @@ router.post("/login", loginRateLimiter, async (request: Request<{}, {}, ServerLo
         return;
     }
 
-    const { rememberMe, email, password } = requestParseResult.data;
+    const { rememberMe, email, password, advancedConfig } = requestParseResult.data;
 
-    const loginBody: ServerLoginBody = { serverType: "PRIVATE", email, password };
-    const imapStatus = await probeImapCredentials(loginBody);
+    const loginBody: ServerLoginBody = { serverType: "PRIVATE", email, password, advancedConfig };
 
-    if (imapStatus !== ImapInstance.Status.LOGGED_IN) {
-        const { statusCode, returnResponse } = getErrorResponseFromStatus(imapStatus);
-        response.status(statusCode).json(returnResponse);
+    // Both protocols are probed in parallel so a misconfigured SMTP host is
+    // caught at login rather than on the first attempt to send an email. The
+    // protocol field on the error lets the frontend point at the right step.
+    const [imapStatus, smtpStatus] = await Promise.all([
+        probeImapCredentials(loginBody),
+        probeSmtpCredentials(loginBody)
+    ]);
+
+    const failedProbe = imapStatus !== ClientStatus.LOGGED_IN
+        ? { protocol: "IMAP" as const, status: imapStatus }
+        : smtpStatus !== ClientStatus.LOGGED_IN
+            ? { protocol: "SMTP" as const, status: smtpStatus }
+            : null;
+
+    if (failedProbe) {
+        const { statusCode, returnResponse } = getErrorResponseFromStatus(failedProbe.status);
+        response.status(statusCode).json({ ...returnResponse, protocol: failedProbe.protocol });
         return;
     }
 
     const payload: TokenPayload = {
         email,
         encryptedPassword: encrypt(password),
-        serverType: "PRIVATE"
+        serverType: "PRIVATE",
+        advancedConfig
     };
 
     sendAuthSuccessResponse(response, payload, rememberMe);
@@ -194,7 +223,7 @@ router.post("/google/callback", loginRateLimiter, async (request: Request<{}, {}
         };
 
         const imapStatus = await probeImapCredentials(loginBody);
-        if (imapStatus !== ImapInstance.Status.LOGGED_IN) {
+        if (imapStatus !== ClientStatus.LOGGED_IN) {
             const { statusCode, returnResponse } = getErrorResponseFromStatus(imapStatus);
             response.status(statusCode).json(returnResponse);
             return;
@@ -229,7 +258,10 @@ router.post("/logout", async (request: Request, response: Response<AuthResponse>
             const tokenPayload = verifyRefreshToken(refreshToken);
             const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
             imapPool.evict(loginBody).catch(thrownError => {
-                console.warn("Logout could not evict pool entry:", thrownError);
+                console.warn("Logout could not evict IMAP pool entry:", thrownError);
+            });
+            smtpPool.evict(loginBody).catch(thrownError => {
+                console.warn("Logout could not evict SMTP pool entry:", thrownError);
             });
         } catch (thrownError: any) {
             console.warn("Logout could not decode session for eviction:", thrownError);

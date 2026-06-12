@@ -32,7 +32,7 @@ export default function ComposeBox() {
                 "fixed inset-0 z-50 flex-col h-dvh w-full overflow-auto",
                 "md:inset-auto md:bottom-0 md:right-4 md:overflow-hidden",
                 "bg-kiwi-white text-kiwi-black shadow-2xl border border-kiwi-middle-grey",
-                "md:rounded-t-lg transition-all duration-300 ease-out",
+                "md:rounded-t-2xl transition-all duration-300 ease-out",
                 // desktop size state
                 fullScreen ? "md:inset-2 md:bottom-2 md:right-2 md:h-[calc(100dvh-1rem)] md:w-[calc(100vw-1rem)] md:left-2" : minimized ? "md:h-11 md:w-160" : "md:h-160 md:w-160", "md:max-h-full md:max-w-full",].join(" ")}
         >
@@ -81,6 +81,7 @@ function Footer() {
                 <Button
                     text="Send"
                     buttonSize="md"
+                    reverseColours
                     icon={<PaperAirplaneIcon className="size-4 -rotate-45" aria-hidden="true" />}
                     onClick={() => alert("Sending coming soon!")}
                 />
@@ -88,7 +89,6 @@ function Footer() {
                     text=""
                     buttonSize="sm"
                     title="Attach file"
-                    reverseColours
                     icon={<PaperClipIcon className="size-5" aria-hidden="true" />}
                     onClick={() => alert("Attachments coming soon!")}
                 />
@@ -97,7 +97,6 @@ function Footer() {
                 text=""
                 buttonSize="sm"
                 title="Discard draft"
-                reverseColours
                 icon={<TrashIcon className="size-5" aria-hidden="true" />}
                 onClick={() => alert("Drafts coming soon!")}
             />

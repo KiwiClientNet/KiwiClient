@@ -108,7 +108,7 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
                             type="button"
                             onClick={() => removeChip(chip.id)}
                             aria-label={`Remove ${chip.address}`}
-                            className="rounded-full p-0.5 hover:bg-kiwi-middle-grey/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60"
+                            className="rounded-full p-0.5 hover:bg-kiwi-middle-grey/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-green/60"
                         >
                             <XMarkIcon className="size-3" aria-hidden="true" />
                         </button>

@@ -14,10 +14,11 @@ interface LogoProps extends React.HTMLAttributes<HTMLImageElement> {
     width?: number;
     height?: number;
     link?: boolean;
+    linkTo?: string;
     reverseLogo?: boolean;
 }
 
-export default function Logo({ width = 200, height = 200, link = true, reverseLogo = false }: LogoProps) {
+export default function Logo({ width = 200, height = 200, link = true, linkTo = "/", reverseLogo = false }: LogoProps) {
     const baseImage = (
         <img
             src={reverseLogo ? reverseLogoImage : logoImage}
@@ -28,6 +29,6 @@ export default function Logo({ width = 200, height = 200, link = true, reverseLo
             decoding="async"
         />
     );
-    const elementToReturn = link ? (<Link to="/"> {baseImage} </Link>) : baseImage;
+    const elementToReturn = link ? (<Link to={linkTo}> {baseImage} </Link>) : baseImage;
     return elementToReturn;
 }

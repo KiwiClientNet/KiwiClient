@@ -8,6 +8,7 @@
 
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useSelectedEmailStore } from "../../../store/selectedEmailStore";
+import { EmailHeader } from "./EmailHeader";
 import { EmailIframe } from "./EmailIframe";
 import { WelcomeMessage } from "./WelcomeMessage";
 
@@ -19,31 +20,32 @@ export function Emailbox({ onBack }: EmailboxProps) {
     const selected = useSelectedEmailStore(state => state.selected);
 
     return (
-        <div className="h-full w-full rounded-none lg:rounded-xl bg-kiwi-black p-2 flex flex-col min-h-0">
-            <div className="flex items-center gap-2 rounded-xl bg-kiwi-black p-2 shrink-0">
-                {selected && onBack && (
+        <div className="h-full w-full rounded-none lg:rounded-2xl bg-kiwi-black p-2 flex flex-col min-h-0">
+            {selected && onBack && (
+                <div className="lg:hidden flex items-center gap-2 pb-2 shrink-0">
                     <button
                         type="button"
                         onClick={onBack}
                         aria-label="Back to inbox"
-                        className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors"
+                        className="kiwi-icon-btn -ml-1"
                     >
                         <ArrowLeftIcon className="size-6" />
                     </button>
-                )}
-                <span className="text-sm opacity-70">
-                    TODO: Selection and tooling bar for individual emails
-                </span>
-            </div>
-            <div className="flex-1 min-h-0 rounded-xl mt-2 bg-kiwi-light-grey p-3 text-kiwi-black overflow-auto">
-                {selected ? (
-                    <EmailIframe selected={selected} />
-                ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-kiwi-light-grey rounded-3xl">
-                        <WelcomeMessage />
+                    <span className="text-sm font-bold">Back</span>
+                </div>
+            )}
+            {selected ? (
+                <>
+                    <EmailHeader selected={selected} />
+                    <div className="flex-1 min-h-0 rounded-xl bg-kiwi-white text-kiwi-black overflow-hidden">
+                        <EmailIframe selected={selected} />
                     </div>
-                )}
-            </div>
+                </>
+            ) : (
+                <div className="flex-1 min-h-0 rounded-xl flex items-center justify-center overflow-auto">
+                    <WelcomeMessage />
+                </div>
+            )}
         </div>
     );
 }

@@ -19,9 +19,11 @@ interface GlanceListProps {
     onFetchNextPage: () => void;
     selectedUniqueIds: Set<number>;
     onToggleSelection: (uniqueId: number) => void;
+    specialTrashFolderPath?: string;
+    onEmailsRemoved?: (removedUniqueIds: Set<number>) => void;
 }
 
-export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFetchNextPage, selectedUniqueIds, onToggleSelection }: GlanceListProps) {
+export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFetchNextPage, selectedUniqueIds, onToggleSelection, specialTrashFolderPath = undefined, onEmailsRemoved = undefined }: GlanceListProps) {
     const triggerIndex = Math.max(0, emailGlances.length - REMAINING_ITEMS_BEFORE_FETCH);
 
     const handleFetchTriggered = () => {
@@ -41,6 +43,8 @@ export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFe
                     onToggleCheck={() => onToggleSelection(emailGlance.uniqueId)}
                     isFetchTrigger={index === triggerIndex}
                     onFetchTriggered={handleFetchTriggered}
+                    specialTrashFolderPath={specialTrashFolderPath}
+                    onEmailsRemoved={onEmailsRemoved}
                 />
             ))}
             {isFetchingNextPage && (

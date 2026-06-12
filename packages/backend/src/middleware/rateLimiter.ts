@@ -37,14 +37,3 @@ export const refreshRateLimiter = rateLimit({
     legacyHeaders: false,
     message: { success: false, code: "AUTH_EXPIRED", message: "Too many refresh requests" }
 });
-
-/**
- * @brief Standard limiter for requesting being added and removed from the waitlist
- */
-export const waitlistRateLimiter = rateLimit({
-    windowMs: ONE_MINUTE_MS,
-    limit: 5,
-    standardHeaders: "draft-7",
-    legacyHeaders: false,
-    message: { success: false, code: "INVALID_REQUESTS", message: "Too many requests; try again shortly" }
-})

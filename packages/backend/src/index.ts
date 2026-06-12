@@ -15,7 +15,6 @@ import healthRoutes from "./routes/health.js";
 import mailboxRoutes from "./routes/mailboxes.js";
 import messageRoutes from "./routes/messages.js";
 import partRoutes from "./routes/parts.js";
-import waitlistRoutes from "./routes/waitlist.js";
 import { getEnv } from "./auth_sessions.js";
 
 const DEFAULT_PORT = 3001;
@@ -43,7 +42,7 @@ app.use(cors({
 }));
 
 // Per-route rate limiters live in middleware/rateLimiter.ts and are mounted on
-// the abuse-prone unauthenticated endpoints (login, refresh, waitlist).
+// the abuse-prone unauthenticated endpoints (login, refresh).
 // Authenticated routes sit behind requireAuth, so a flooded request implies a
 // compromised session rather than anonymous abuse and is a different threat model.
 
@@ -52,7 +51,6 @@ app.use(cookieParser());
 
 app.use("/api", authRoutes);
 app.use("/api", healthRoutes);
-app.use("/api", waitlistRoutes);
 app.use("/api", mailboxRoutes);
 app.use("/api", messageRoutes);
 app.use("/api", partRoutes);

@@ -48,18 +48,19 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                     fixed md:relative inset-y-0 left-0 z-40
                     flex h-dvh w-64 md:w-56 flex-col
                     bg-kiwi-black md:bg-transparent
+                    border-r border-kiwi-light-black md:border-0
                     transform transition-transform duration-200
                     ${isOpen ? "translate-x-0" : "-translate-x-full"}
                     md:translate-x-0
                 `}
             >
                 <div className="flex items-center justify-between pl-4 md:justify-center">
-                    <Logo reverseLogo={true} width={100} height={100}  />
+                    <Logo reverseLogo={true} width={100} height={100} linkTo="/mail" />
                     <button
                         type="button"
                         onClick={onClose}
                         aria-label="Close menu"
-                        className="md:hidden p-2 rounded-lg hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors"
+                        className="md:hidden kiwi-icon-btn"
                     >
                         <XMarkIcon className="size-6" />
                     </button>

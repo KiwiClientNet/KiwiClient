@@ -14,6 +14,7 @@ import { AuthContext } from "../../../auth/AuthContext";
 import { fetchBulkBodies, fetchGlancePage } from "../../../api/messages";
 import { StatusComponent } from "../../../components/Loading";
 import { useToastStore } from "../../../store/toastStore";
+import { useSelectedEmailStore } from "../../../store/selectedEmailStore";
 import type { MailboxSelection } from "../types";
 import { GlanceList } from "./GlanceList";
 import { GlanceToolbar } from "./GlanceToolbar";
@@ -186,6 +187,7 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
 
     const allLoadedEmailIds = emailGlances.map(item => item.uniqueId);
     const areAllSelected = selection.areAllSelected(allLoadedEmailIds);
+    const selectedGlances = emailGlances.filter(glance => selection.selectedUniqueIds.has(glance.uniqueId));
 
     const handleToggleSelectAll = () => {
         if (areAllSelected) {
@@ -193,6 +195,31 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
             return;
         }
         selection.selectAll(allLoadedEmailIds);
+    };
+
+    /**
+     * @brief Keeps the reading pane valid when the open email is removed.
+     *
+     * Picks the next email below the removed one in the list (matching the
+     * reading order), falling back to the nearest one above, so the pane
+     * never shows a message that no longer exists in this mailbox.
+     */
+    const handleEmailsRemoved = (removedUniqueIds: Set<number>) => {
+        const openEmail = useSelectedEmailStore.getState().selected;
+        if (!openEmail || openEmail.mailboxPath !== selectedMailbox.path || !removedUniqueIds.has(openEmail.uniqueId)) {
+            return;
+        }
+
+        const openIndex = emailGlances.findIndex(glance => glance.uniqueId === openEmail.uniqueId);
+        const nextBelow = emailGlances.slice(openIndex + 1).find(glance => !removedUniqueIds.has(glance.uniqueId));
+        const nextAbove = [...emailGlances.slice(0, Math.max(openIndex, 0))].reverse().find(glance => !removedUniqueIds.has(glance.uniqueId));
+        const nextEmail = nextBelow ?? nextAbove;
+
+        if (nextEmail) {
+            useSelectedEmailStore.getState().select(nextEmail.uniqueId, nextEmail.mailboxPath);
+            return;
+        }
+        useSelectedEmailStore.getState().clear();
     };
 
     return (
@@ -203,9 +230,10 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
                     selectedMailboxPath={selectedMailbox.path}
                     areAllSelected={areAllSelected}
                     onToggleSelectAll={handleToggleSelectAll}
-                    selectedUniqueIds={selection.selectedUniqueIds}
+                    selectedGlances={selectedGlances}
                     specialTrashFolderPath={specialTrashFolderPath}
                     clearGlanceSelection={() => { selection.clearSelection() }}
+                    onEmailsRemoved={handleEmailsRemoved}
                 />
             }
         >
@@ -216,6 +244,8 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
                 onFetchNextPage={fetchNextPage}
                 selectedUniqueIds={selection.selectedUniqueIds}
                 onToggleSelection={selection.toggleSelection}
+                specialTrashFolderPath={specialTrashFolderPath}
+                onEmailsRemoved={handleEmailsRemoved}
             />
         </GlanceLayout>
     );
@@ -239,7 +269,7 @@ function GlanceShell({ selectedMailboxName, selectedMailboxPath, statusElement }
                     selectedMailboxPath={selectedMailboxPath}
                     areAllSelected={false}
                     onToggleSelectAll={() => undefined}
-                    selectedUniqueIds={new Set()}
+                    selectedGlances={[]}
                 />
             }
         >

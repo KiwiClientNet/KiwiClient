@@ -83,7 +83,7 @@ export default function EmailEditor() {
                     'flex-1 min-h-40 rounded-md border border-kiwi-light-grey ' +
                     'bg-kiwi-white p-3 text-sm leading-relaxed text-kiwi-black ' +
                     'overflow-y-auto kiwi-scrollbar ' +
-                    'focus-within:border-kiwi-dark-grey ' +
+                    'focus-within:border-kiwi-green ' +
                     '[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full ' +
                     '[&_.ProseMirror_a]:text-kiwi-info ' +
                     '[&_.ProseMirror_a]:underline ' +

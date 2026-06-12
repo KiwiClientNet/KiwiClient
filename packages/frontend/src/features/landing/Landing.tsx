@@ -1,93 +1,109 @@
-import { useCallback, useState, type ComponentType, type SVGProps } from "react";
-import LandingSignup, { type WaitlistOutcome } from "./LandingSignup";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
-import { useQuery } from "@tanstack/react-query";
+/**
+ * @brief Public landing page: single-viewport manifesto hero.
+ *
+ */
+
 import { Link } from "react-router-dom";
 import Logo from "../../components/Logo";
-import ViewOnGitHub from "../../components/ViewOnGitHub";
+import reverseLogoImage from "../../assets/logos/kiwi-logo-white.svg";
 
-type HeroIcon = ComponentType<SVGProps<SVGSVGElement>>;
+const MANIFESTO_LINES = ["Your server", "Your client", "Your email"];
+
+const FEATURE_POINTS = [
+    { title: "Open Source", detail: "Every line of code is public and auditable" },
+    { title: "No Tracking", detail: "Your mail is read by you and nobody else" },
+    { title: "Lightweight & Fast", detail: "Built to feel instant, even on slow days" }
+];
 
 export default function Landing() {
-    const [outcome, setOutcome] = useState<WaitlistOutcome>('IDLE');
-    let count: string;
-
-    const { data, isPending, isError } = useQuery({
-        queryKey: ['count'],
-        queryFn: () => fetch('/api/waitlist/count').then(response => response.json()),
-    })
-
-    if (isPending || isError) {
-        count = '';
-    } else {
-        count = String(data.count);
-    }
-
-    const returnOutcomeMessage = useCallback(() => {
-        let Icon: HeroIcon;
-        let colour = "";
-        let message = "";
-
-        switch (outcome) {
-            case "FAILURE":
-                Icon = XMarkIcon;
-                colour = "text-kiwi-failure";
-                message = "Something went wrong, please try again later.";
-                break;
-            case "SUCCESS":
-                Icon = CheckIcon;
-                colour = "text-kiwi-success";
-                message = "Thanks — you're on the list! We'll keep you updated. ";
-                break;
-            default:
-                return <></>;
-        }
-
-        return (
-            <>
-                <Icon className={`block size-10 ${colour}`} />
-                <h4 className="text-md sm:text-xl lg:text-2xl m-3 text-center">{message}</h4>
-            </>
-        );
-
-    }, [outcome]);
-
     return (
-        <div className={`min-h-dvh sm:h-dvh sm:overflow-hidden transition-opacity duration-300 ${(!isPending && !isError) ? "opacity-100" : "opacity-0"}`}>
-            <div className="w-full min-h-dvh sm:h-full grid place-items-center px-4 py-8 sm:pt-12 sm:pb-24">
-                <div className="w-full max-w-6xl flex flex-col items-center font-bold antialiased">
-                    <div className="flex flex-col sm:flex-row items-center">
-                        <Logo className="w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64" reverseLogo={true} />
-                        <h1 className="text-5xl sm:text-7xl lg:text-9xl text-center sm:text-left"> KiwiClient </h1>
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl lg:text-5xl mt-3 text-center">Your server. Your client. Your email.</h2>
-                    <h3 className="text-lg sm:text-2xl lg:text-3xl mt-4 text-center max-w-4xl"> An open source email client for self-hosted mail servers — built for speed, simplicity, and privacy </h3>
-                    <div className="flex flex-col sm:flex-row md:gap-6 sm:gap-1 mt-6 items-center opacity-80 text-center text-sm sm:text-base">
-                        <span>Open Source</span>
-                        <span>No Tracking</span>
-                        <span>Lightweight & Fast</span>
-                    </div>
-                    <h3 className="text-lg sm:text-xl lg:text-2xl my-6  text-center opacity-80 max-w-6xl"> Currently in development — join the {`${count}`} people waiting and be the first to help shape KiwiClient</h3>
-                    <LandingSignup setOutcome={setOutcome} />
-                    <span className="text-sm text-gray-300 opacity-30 mt-3 text-center">
-                        <span className="whitespace-nowrap">
-                            By submitting your email, you agree to our{" "}
-                        </span>
-                        <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:opacity-60 transition-opacity duration-300 underline">Privacy Policy</Link>
-                        <span className="whitespace-nowrap">
-                            &nbsp;and {" "}
-                        </span>
-                        <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:opacity-60 transition-opacity duration-300 underline">Terms of Service</Link>
-                    </span>
-                    <ViewOnGitHub/>
-                    <div
-                        aria-live="polite"
-                        className={`flex flex-row items-center min-h-16 transition-opacity duration-300 ${outcome !== "IDLE" ? "opacity-100" : "opacity-0"}`}
+        <div className="relative min-h-dvh max-h-dvh flex flex-col overflow-y-hidden overflow-hidden">
+            <img
+                src={reverseLogoImage}
+                alt=""
+                aria-hidden="true"
+                className="absolute -right-40 -bottom-40 w-176 opacity-5 -rotate-12 pointer-events-none select-none"
+            />
+
+            <header className="flex items-center justify-between px-6 sm:px-12 py-4">
+                <Link to="/" className="flex items-center gap-2 no-underline hover:text-kiwi-white">
+                    <Logo width={44} height={44} link={false} reverseLogo={true} />
+                    <span className="font-bold text-lg">KiwiClient</span>
+                </Link>
+
+                <nav className="flex items-center gap-5 sm:gap-8">
+                    <Link to="/about" className="kiwi-link">About</Link>
+                    <Link to="/guide" className="kiwi-link">Guide</Link>
+                    <Link
+                        to="/login"
+                        className="hidden sm:block no-underline font-bold bg-kiwi-green text-kiwi-black px-4 py-2 rounded-lg hover:bg-kiwi-white hover:text-kiwi-black transition-colors duration-200"
                     >
-                        {returnOutcomeMessage()}
+                        Get started
+                    </Link>
+                </nav>
+            </header>
+
+            <main className="flex-1 grid place-items-center px-6 sm:px-12 py-10">
+                <section className="max-w-3xl w-full">
+                    <p className="text-kiwi-green font-bold tracking-[0.25em] uppercase text-xs sm:text-sm animate-kiwi-rise">
+                        Free &amp; open source email client
+                    </p>
+
+                    <h1 className="mt-4 font-bold leading-[1.05] text-5xl sm:text-7xl lg:text-8xl">
+                        {MANIFESTO_LINES.map((manifestoLine, lineIndex) => (
+                            <span
+                                key={manifestoLine}
+                                className="block animate-kiwi-rise"
+                                style={{ animationDelay: `${100 + lineIndex * 100}ms` }}
+                            >
+                                {manifestoLine}<span className="text-kiwi-green">.</span>
+                            </span>
+                        ))}
+                    </h1>
+
+                    <p className="mt-6 text-lg sm:text-xl max-w-xl opacity-80 animate-kiwi-rise [animation-delay:450ms]">
+                        An open source email client made for your self-hosted mail
+                        server — built for speed, simplicity, and privacy.
+                    </p>
+
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4 animate-kiwi-rise [animation-delay:550ms]">
+                        <Link
+                            to="/login"
+                            className="no-underline text-center font-bold text-lg bg-kiwi-green text-kiwi-black px-10 py-4 rounded-xl hover:bg-kiwi-white hover:text-kiwi-black transition-colors duration-200"
+                        >
+                            Get started
+                        </Link>
+                        <Link
+                            to="/guide"
+                            className="no-underline text-center font-bold text-lg border border-kiwi-light-black px-10 py-4 rounded-xl hover:border-kiwi-middle-grey hover:text-kiwi-white transition-colors duration-200"
+                        >
+                            Host your own server
+                        </Link>
                     </div>
-                </div>
-            </div>
+
+                    <ul className="mt-12 grid sm:grid-cols-3 gap-6 border-t border-kiwi-light-black pt-6 animate-kiwi-rise [animation-delay:650ms]">
+                        {FEATURE_POINTS.map((featurePoint) => (
+                            <li key={featurePoint.title}>
+                                <p className="font-bold flex items-center gap-2">
+                                    <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-kiwi-green" />
+                                    {featurePoint.title}
+                                </p>
+                                <p className="text-sm opacity-60 mt-1">{featurePoint.detail}</p>
+                            </li>
+                        ))}
+                    </ul>
+
+                    <p className="mt-6 text-sm opacity-40 animate-kiwi-rise [animation-delay:750ms]">
+                        Also connects to Gmail accounts.
+                    </p>
+                </section>
+            </main>
+
+            <footer className="flex flex-wrap items-center justify-center gap-6 pb-6 text-sm opacity-40">
+                <Link to="/privacy-policy" className="hover:opacity-60 transition-opacity duration-300">Privacy Policy</Link>
+                <Link to="/terms-of-service" className="hover:opacity-60 transition-opacity duration-300">Terms of Service</Link>
+                <a href="https://github.com/KiwiClientNet/KiwiClient" target="_blank" rel="noopener noreferrer" className="hover:opacity-60 transition-opacity duration-300">GitHub</a>
+            </footer>
         </div>
     );
 }

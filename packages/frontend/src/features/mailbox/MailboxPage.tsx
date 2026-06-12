@@ -120,18 +120,18 @@ export function MailboxPage() {
                         type="button"
                         onClick={() => setIsSidebarOpen(true)}
                         aria-label="Open menu"
-                        className="p-2 -ml-2 rounded-lg hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors"
+                        className="kiwi-icon-btn -ml-2"
                     >
                         <Bars3Icon className="size-6" />
                     </button>
-                    <span className="font-bold truncate">{selectedMailbox.name}</span>
+                    <span className="font-bold truncate">{selectedMailbox.name}<span className="text-kiwi-green">.</span></span>
                 </header>
 
-                <div className="hidden md:block m-3 p-2 bg-kiwi-middle-black rounded-3xl">
+                <div className="hidden md:block m-3 mb-0 px-4 py-2 kiwi-panel text-sm opacity-60">
                     Message search coming soon!
                 </div>
 
-                <div className="flex-1 min-h-0 flex flex-col lg:flex-row lg:gap-2 lg:m-3 lg:p-2 lg:bg-kiwi-middle-black lg:rounded-3xl">
+                <div className="flex-1 min-h-0 flex flex-col lg:flex-row lg:gap-2 lg:m-3 lg:p-2 lg:kiwi-panel">
                     <div className={`${mobileView === "glance" ? "flex" : "hidden"} lg:flex flex-col flex-1 lg:flex-none lg:w-md xl:w-lg 2xl:w-xl min-h-0`}>
                         <Glance selectedMailbox={selectedMailbox} specialTrashFolderPath={specialTrashFolderPath} />
                     </div>
@@ -141,8 +141,12 @@ export function MailboxPage() {
                 </div>
 
                 {!selectedEmail && (
-                    <button onClick={() => setHidden(false)} className="w-20 h-20 bg-kiwi-light-grey text-kiwi-black rounded-full hover:bg-kiwi-white flex items-center justify-center transition-all duration-200 fixed bottom-20 right-4 md:hidden shadow-kiwi-dark-grey shadow-sm">
-                        <PencilIcon className="size-10" />
+                    <button
+                        onClick={() => setHidden(false)}
+                        aria-label="Compose a new email"
+                        className="w-16 h-16 bg-kiwi-green text-kiwi-black rounded-full hover:bg-kiwi-white flex items-center justify-center transition-colors duration-200 fixed bottom-20 right-4 md:hidden shadow-kiwi-black shadow-lg"
+                    >
+                        <PencilIcon className="size-8" />
                     </button>
                 )}
                 <StatusBar />

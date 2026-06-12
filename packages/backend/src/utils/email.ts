@@ -15,6 +15,11 @@ export function getLoginRequestBodyFromResponseCookie(tokenPayload: TokenPayload
                 serverType: "GMAIL"
             } as GoogleLoginBody;
         case "PRIVATE":
-            return { email: tokenPayload.email, password: decryptFunction(tokenPayload.encryptedPassword), serverType: "PRIVATE" } as ServerLoginBody;
+            return {
+                email: tokenPayload.email,
+                password: decryptFunction(tokenPayload.encryptedPassword),
+                serverType: "PRIVATE",
+                advancedConfig: tokenPayload.advancedConfig
+            } as ServerLoginBody;
     }
 }

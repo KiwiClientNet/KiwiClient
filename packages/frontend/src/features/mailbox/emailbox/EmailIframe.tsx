@@ -32,12 +32,12 @@ const HEIGHT_CHANGE_THRESHOLD_PX = 8;
  * @brief Wraps body content in a minimal HTML document for the iframe srcDoc.
  *
  * - The base tag sends external links to a new tab without rel attributes.
- * - body { overflow: auto hidden } gives horizontal scroll only; the iframe is
- *   sized to full content height so there is never vertical scroll inside it.
- * - The content wrapper reserves padding-bottom so the horizontal scrollbar
- *   never sits on top of the last line.
+ * - body overflow is hidden because the email never scrolls inside the
+ *   iframe: the document is zoomed to fit the pane width and the iframe is
+ *   sized to full content height, so the outer pane owns all scrolling.
  * - No `* { max-width }` or `table-layout: fixed`: those corrupt fixed-width
- *   table layouts. The email's own widths are left intact.
+ *   table layouts. The email's own widths are left intact and the whole
+ *   document is scaled instead.
  */
 function buildIframeDocument(bodyContent: string): string {
     return `<!DOCTYPE html>
@@ -48,20 +48,19 @@ function buildIframeDocument(bodyContent: string): string {
 <meta name="viewport" content="width=device-width" />
 <style>
 html { margin: 0; }
-html, body { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.28) transparent; }
 body {
     margin: 0;
     background: #ffffff;
-    overflow: auto hidden;
+    overflow: hidden;
 }
-/* Universal so it styles whichever element owns the scroll (the root, not
- * always body), matching the outer pane's vertical scrollbar width. */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background-color: rgba(0, 0, 0, 0.25); border-radius: 9999px; }
-::-webkit-scrollbar-track { background: transparent; }
 #${EMAIL_ROOT_ID} { box-sizing: content-box; }
-.kiwi-email-content { width: 100%; padding: 8px; padding-bottom: 18px; box-sizing: border-box; }
-img { max-width: none; }
+.kiwi-email-content { width: 100%; padding: 8px; box-sizing: border-box; }
+/* Free-standing photos (e.g. a huge image pasted into a reply) are capped to
+ * the pane so they cannot define the document's natural width and shrink the
+ * rest of the email. Images inside tables keep their sizes because sliced
+ * table layouts in marketing email break when their cells rescale; those
+ * emails are handled by the whole-document zoom instead. */
+img:not(table *) { max-width: 100%; height: auto; }
 table { table-layout: auto; }
 pre { white-space: pre-wrap; word-break: break-word; }
 </style>
@@ -82,6 +81,9 @@ export function EmailIframe({ selected }: { selected: SelectedEmailReference }) 
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const rootObserverRef = useRef<ResizeObserver | null>(null);
     const previousHeightRef = useRef<number>(0);
+    const naturalWidthRef = useRef<number>(0);
+    const appliedScaleRef = useRef<number>(1);
+    const postFitScrollWidthRef = useRef<number>(0);
 
     const { data, status, isLoading } = useQuery({
         queryKey: emailQueryKey(selected.mailboxPath, selected.uniqueId),
@@ -110,16 +112,44 @@ export function EmailIframe({ selected }: { selected: SelectedEmailReference }) 
         return buildIframeDocument("<pre>Email not found</pre>");
     }, [status, data]);
 
-    // Grow the iframe to its content's height so the outer pane owns vertical
-    // scroll and the email is never clipped. Horizontal scroll stays inside the
-    // iframe (scrolling="yes"). The threshold guards against reflow churn.
-    const syncIframeHeight = useCallback(() => {
+    /**
+     * @brief Fits the email to the pane and grows the iframe to content height.
+     *
+     * Wide emails are scaled down with CSS zoom (layout-affecting, so heights
+     * recompute and text stays crisp, unlike transform: scale) so the message
+     * always fits the pane width on any screen. The natural width is measured
+     * at zoom 1 and cached; the zoom property is only written when the scale
+     * actually changes, because every write resizes the root and would
+     * otherwise re-trigger the ResizeObserver in an endless loop.
+     */
+    const syncIframeSize = useCallback((forceRemeasure: boolean) => {
         const iframe = iframeRef.current;
         const root = iframe?.contentDocument?.getElementById(EMAIL_ROOT_ID);
         if (!iframe || !root) {
             return;
         }
-        const height = root.scrollHeight;
+
+        // Re-measure only when the content genuinely changed since the last
+        // fit (e.g. a late image widened the email). Comparing against the
+        // recorded post-fit width makes this function idempotent, so the
+        // resize events caused by its own zoom writes settle instead of
+        // looping forever.
+        const contentChangedSinceLastFit = root.scrollWidth !== postFitScrollWidthRef.current;
+        if (forceRemeasure || contentChangedSinceLastFit) {
+            root.style.zoom = "1";
+            appliedScaleRef.current = 1;
+            naturalWidthRef.current = root.scrollWidth;
+        }
+
+        const availableWidth = iframe.clientWidth;
+        const scale = naturalWidthRef.current > availableWidth ? availableWidth / naturalWidthRef.current : 1;
+        if (scale !== appliedScaleRef.current) {
+            appliedScaleRef.current = scale;
+            root.style.zoom = String(scale);
+        }
+        postFitScrollWidthRef.current = root.scrollWidth;
+
+        const height = root.getBoundingClientRect().height;
         if (Math.abs(height - previousHeightRef.current) < HEIGHT_CHANGE_THRESHOLD_PX) {
             return;
         }
@@ -127,25 +157,39 @@ export function EmailIframe({ selected }: { selected: SelectedEmailReference }) 
         iframe.style.height = `${height}px`;
     }, []);
 
-    // On each document load, size the iframe once and then watch the email root
-    // so late-loading images and width-driven reflows (pane resize) keep the
-    // height in sync. rAF batches bursts of mutations into one measurement.
+    // On each document load, fit the email once, then watch two things: the
+    // email root (late-loading images change the content size) and the iframe
+    // itself (pane resizes and orientation changes change the available
+    // width). rAF batches bursts of mutations into one measurement. A content
+    // observation re-measures the natural width because an image can widen
+    // the email after the first fit.
     const handleIframeLoad = useCallback(() => {
         previousHeightRef.current = 0;
-        syncIframeHeight();
+        naturalWidthRef.current = 0;
+        postFitScrollWidthRef.current = 0;
+        syncIframeSize(true);
 
         rootObserverRef.current?.disconnect();
         const root = iframeRef.current?.contentDocument?.getElementById(EMAIL_ROOT_ID);
         if (root) {
-            const observer = new ResizeObserver(() => requestAnimationFrame(syncIframeHeight));
+            const observer = new ResizeObserver(() => requestAnimationFrame(() => syncIframeSize(false)));
             observer.observe(root);
             rootObserverRef.current = observer;
         }
-    }, [syncIframeHeight]);
+    }, [syncIframeSize]);
 
     useEffect(() => {
-        return () => rootObserverRef.current?.disconnect();
-    }, []);
+        const iframe = iframeRef.current;
+        if (!iframe) {
+            return;
+        }
+        const paneObserver = new ResizeObserver(() => requestAnimationFrame(() => syncIframeSize(false)));
+        paneObserver.observe(iframe);
+        return () => {
+            paneObserver.disconnect();
+            rootObserverRef.current?.disconnect();
+        };
+    }, [syncIframeSize]);
 
     return (
         <div className="h-full w-full relative rounded bg-kiwi-white overflow-y-auto overflow-x-hidden kiwi-scrollbar-on-light">
@@ -159,7 +203,6 @@ export function EmailIframe({ selected }: { selected: SelectedEmailReference }) 
                 title="Email Content"
                 srcDoc={iframeDocument}
                 onLoad={handleIframeLoad}
-                scrolling="yes"
                 sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                 className="w-full border-none block"
             />

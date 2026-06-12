@@ -25,6 +25,7 @@
     --kiwi-middle-grey: #919191;
     --kiwi-light-grey: #c6c6c6;
     --kiwi-white: #ffffff;
+    --kiwi-green: #7BA05B;
     --kiwi-success: #283429;
     --kiwi-failure: #7E262F;
     --kiwi-warning: #B58B00;
@@ -42,10 +43,25 @@
     --color-kiwi-middle-grey: var(--kiwi-middle-grey);
     --color-kiwi-light-grey: var(--kiwi-light-grey);
     --color-kiwi-white: var(--kiwi-white);
+    --color-kiwi-green: var(--kiwi-green);
     --color-kiwi-success: var(--kiwi-success);
     --color-kiwi-failure: var(--kiwi-failure);
     --color-kiwi-warning: var(--kiwi-warning);
     --color-kiwi-info: var(--kiwi-info);
+
+    --animate-kiwi-rise: kiwi-rise 0.5s ease-out both;
+
+    @keyframes kiwi-rise {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 }
 
 @layer base {
@@ -54,8 +70,41 @@
         font-family: var(--font-sans);
     }
     a {
-        @apply underline duration-200 transition-all hover:text-kiwi-light-black
+        @apply underline underline-offset-2 decoration-kiwi-dark-grey transition-colors duration-200 hover:text-kiwi-green hover:decoration-kiwi-green;
     }
+}
+
+/* Kiwi design-system utilities. These exist so every surface, input, and
+ * link shares one definition; change the look here, not at call sites. */
+
+/* A raised panel: the standard container surface of the app shell. */
+@utility kiwi-panel {
+    @apply bg-kiwi-middle-black border border-kiwi-light-black rounded-2xl;
+}
+
+/* A text input; the green focus border is the app-wide focus signal. */
+@utility kiwi-input {
+    @apply w-full border rounded-lg p-3 bg-transparent outline-none transition-colors duration-200 focus:border-kiwi-green;
+}
+
+/* A quiet square icon button used in toolbars and headers. */
+@utility kiwi-icon-btn {
+    @apply p-2 rounded-lg cursor-pointer hover:bg-kiwi-light-black active:bg-kiwi-light-black transition-colors duration-200;
+}
+
+/* A quiet navigation link that brightens on hover instead of underlining. */
+@utility kiwi-link {
+    @apply no-underline opacity-70 hover:opacity-100 hover:text-kiwi-white transition-opacity duration-200;
+}
+
+/* A small uppercase green label, as used on the landing hero. */
+@utility kiwi-eyebrow {
+    @apply text-kiwi-green font-bold tracking-[0.25em] uppercase text-xs;
+}
+
+/* A count pill, e.g. unseen messages beside a mailbox name. */
+@utility kiwi-badge {
+    @apply text-xs font-bold bg-kiwi-green text-kiwi-black rounded-full px-2 py-0.5;
 }
 
 .kiwi-scrollbar {

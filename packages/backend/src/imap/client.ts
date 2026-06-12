@@ -7,7 +7,7 @@
  */
 
 import {
-    DEFAULT_PORT,
+    DEFAULT_IMAP_PORT,
     type EmailGlance,
     type EmailMessage,
     type GlancePage,
@@ -24,61 +24,57 @@ import {
 } from "imapflow";
 import { strict as assert } from "node:assert";
 import { mapEmailGlance, mapEmailMessage, mapMailbox } from "./mappers.js";
+import { ClientStatus } from "../utils/status.js";
+import { AbstractClient } from "../utils/abstract_client.js";
 
-interface InlineImageResolutionResult {
-    html: string;
-}
+// Bounds the TCP connect and server greeting so a wrong host or port fails
+// in seconds instead of hanging until the OS socket timeout (~2 minutes).
+const CONNECT_TIMEOUT_MS = 10 * 1000;
 
-export class ImapInstance {
+export class ImapInstance extends AbstractClient<ImapFlow> {
 
-    private imapClient: undefined | ImapFlow;
-    private status: ImapInstance.Status;
+    protected _client: undefined | ImapFlow;
 
     constructor() {
-        this.imapClient = undefined;
-        this.status = ImapInstance.Status.UNDEFINED;
-    }
-
-    /**
-     * @brief Reports whether the instance is currently authenticated.
-     */
-    private isAuthenticated(): boolean {
-        return this.status === ImapInstance.Status.LOGGED_IN && this.imapClient !== undefined;
+        super();
     }
 
     /**
      * @brief Maps a thrown imapflow error onto the internal status taxonomy.
      */
-    private setStatusFromError(thrownError: any): void {
+    protected _setStatusFromError(thrownError: any): void {
         if (thrownError.code === "ENOTFOUND") {
-            this.status = ImapInstance.Status.NO_SERVER;
+            this._status = ClientStatus.NO_SERVER;
             return;
         }
-        if (thrownError.code === "NoConnection") {
-            this.status = ImapInstance.Status.NOT_CONNECTED;
+        if (["NoConnection", "ETIMEDOUT", "ETIMEOUT", "ECONNREFUSED", "ECONNRESET"].includes(thrownError.code)) {
+            this._status = ClientStatus.NOT_CONNECTED;
             return;
         }
         if (thrownError.authenticationFailed) {
-            this.status = ImapInstance.Status.AUTH_ERROR;
+            this._status = ClientStatus.AUTH_ERROR;
             return;
         }
-        this.status = ImapInstance.Status.UNKNOWN_ERROR;
+        this._status = ClientStatus.UNKNOWN_ERROR;
     }
 
     /**
      * @brief Builds the imapflow options for a private IMAP server login.
      *
-     * Derives the host from the email domain by prefixing "mail." which is
-     * the convention used by the cPanel-style hosts this client targets.
+     * Falls back to the email domain prefixed with "mail." (the cPanel-style
+     * convention) when no host override was supplied. Port 993 is implicit
+     * TLS; any other port opens in plaintext and upgrades via STARTTLS.
      */
-    private buildPrivateLoginOptions(loginRequest: ServerLoginBody): ImapFlowOptions {
-        const advancedConfiguration = loginRequest.advancedConfig ?? { port: DEFAULT_PORT };
+    private _buildPrivateLoginOptions(loginRequest: ServerLoginBody): ImapFlowOptions {
         const [user, hostname] = loginRequest.email.split("@");
+        const port = loginRequest.advancedConfig?.imapPort ?? DEFAULT_IMAP_PORT;
 
         return {
-            host: `mail.${hostname}`,
-            port: advancedConfiguration.port,
-            secure: true,
+            host: loginRequest.advancedConfig?.imapHost ?? `mail.${hostname}`,
+            port,
+            secure: port === DEFAULT_IMAP_PORT,
+            connectionTimeout: CONNECT_TIMEOUT_MS,
+            greetingTimeout: CONNECT_TIMEOUT_MS,
             auth: {
                 user: `${user}`,
                 pass: loginRequest.password
@@ -90,13 +86,13 @@ export class ImapInstance {
     /**
      * @brief Builds the imapflow options for a Gmail OAuth2 login.
      */
-    private buildGmailLoginOptions(loginRequest: GoogleLoginBody): ImapFlowOptions {
-        const advancedConfiguration = loginRequest.advancedConfig ?? { port: DEFAULT_PORT };
-
+    private _buildGmailLoginOptions(loginRequest: GoogleLoginBody): ImapFlowOptions {
         return {
             host: "imap.gmail.com",
-            port: advancedConfiguration.port,
+            port: DEFAULT_IMAP_PORT,
             secure: true,
+            connectionTimeout: CONNECT_TIMEOUT_MS,
+            greetingTimeout: CONNECT_TIMEOUT_MS,
             auth: {
                 user: loginRequest.email,
                 accessToken: loginRequest.accessCode
@@ -111,54 +107,54 @@ export class ImapInstance {
      * @param loginRequest - The validated login body for either Gmail or a private server.
      * @returns True on a successful connect; false when the credentials are rejected or unreachable.
      */
-    async loginToEmailServer(loginRequest: ServerLoginBody | GoogleLoginBody): Promise<ImapInstance.Status> {
-        if (this.isAuthenticated()) {
-            return this.status;
+    async loginToEmailServer(loginRequest: ServerLoginBody | GoogleLoginBody): Promise<ClientStatus> {
+        if (this._isAuthenticated()) {
+            return this._status;
         }
 
         let loginOptions: ImapFlowOptions;
         switch (loginRequest.serverType) {
             case "PRIVATE":
-                loginOptions = this.buildPrivateLoginOptions(loginRequest);
+                loginOptions = this._buildPrivateLoginOptions(loginRequest);
                 break;
             case "GMAIL":
-                loginOptions = this.buildGmailLoginOptions(loginRequest);
+                loginOptions = this._buildGmailLoginOptions(loginRequest);
                 break;
             default:
-                this.status = ImapInstance.Status.UNDEFINED;
-                return this.status;
+                this._status = ClientStatus.UNDEFINED;
+                return this._status;
         }
 
         try {
-            this.imapClient = new ImapFlow(loginOptions);
-            this.imapClient.on("error", (socketError: any) => {
+            this._client = new ImapFlow(loginOptions);
+            this._client.on("error", (socketError: any) => {
                 console.warn(`[ImapFlow] socket error:`, socketError?.code ?? socketError?.message ?? socketError);
             });
-            await this.imapClient.connect();
-            this.status = ImapInstance.Status.LOGGED_IN;
+            await this._client.connect();
+            this._status = ClientStatus.LOGGED_IN;
         } catch (thrownError: any) {
-            this.imapClient = undefined;
-            this.setStatusFromError(thrownError);
+            this._client = undefined;
+            this._setStatusFromError(thrownError);
         }
 
-        return this.status;
+        return this._status;
     }
 
     /**
      * @brief Politely closes the IMAP session and clears local state.
      */
     async logoutFromEmailServer(): Promise<boolean> {
-        if (this.status === ImapInstance.Status.LOGGED_OUT || !this.imapClient) {
+        if (this._status === ClientStatus.LOGGED_OUT || !this._client) {
             return false;
         }
 
         try {
-            await this.imapClient.logout();
+            await this._client.logout();
         } catch (thrownError: any) {
             console.warn("IMAP logout encountered an error (likely already disconnected):", thrownError);
         } finally {
-            this.imapClient = undefined;
-            this.status = ImapInstance.Status.LOGGED_OUT;
+            this._client = undefined;
+            this._status = ClientStatus.LOGGED_OUT;
         }
 
         return true;
@@ -168,31 +164,27 @@ export class ImapInstance {
      * @brief Sends a NOOP to keep the connection warm and detect dead sockets.
      */
     async isAlive(): Promise<boolean> {
-        if (!this.imapClient) {
+        if (!this._client) {
             return false;
         }
 
         try {
-            await this.imapClient.noop();
+            await this._client.noop();
             return true;
         } catch {
             return false;
         }
     }
 
-    getStatus(): ImapInstance.Status {
-        return this.status;
-    }
-
     /**
      * @brief Lists every mailbox visible to the authenticated user.
      */
     async getMailboxes(): Promise<Mailbox[]> {
-        if (!this.isAuthenticated()) {
+        if (!this._isAuthenticated()) {
             return [];
         }
 
-        const listResponses = await this.imapClient!.list();
+        const listResponses = await this._client!.list();
         return listResponses.map(mapMailbox);
     }
 
@@ -203,12 +195,12 @@ export class ImapInstance {
      */
     async getUnseenCount(mailboxPath: string): Promise<number> {
         const ERROR = -1;
-        if (!this.isAuthenticated()) {
+        if (!this._isAuthenticated()) {
             return ERROR;
         }
 
         try {
-            const status = await this.imapClient!.status(mailboxPath, { unseen: true });
+            const status = await this._client!.status(mailboxPath, { unseen: true });
             return status.unseen ?? ERROR;
 
         } catch (error: any) {
@@ -224,12 +216,12 @@ export class ImapInstance {
      * select it; some IMAP namespaces such as "[Gmail]" appear in LIST but
      * carry the "\\Noselect" flag and reject SELECT commands outright.
      */
-    private async findMailbox(mailboxPath: string): Promise<ListResponse | null> {
-        if (!this.isAuthenticated()) {
+    private async _findMailbox(mailboxPath: string): Promise<ListResponse | null> {
+        if (!this._isAuthenticated()) {
             return null;
         }
 
-        const availableMailboxes = await this.imapClient!.list();
+        const availableMailboxes = await this._client!.list();
         for (const mailbox of availableMailboxes) {
             if (mailbox.path === mailboxPath) {
                 return mailbox;
@@ -244,8 +236,8 @@ export class ImapInstance {
      * A mailbox is selectable when it exists in the listing and does not
      * carry the IMAP "\\Noselect" flag.
      */
-    private async isMailboxSelectable(mailboxPath: string): Promise<boolean> {
-        const mailbox = await this.findMailbox(mailboxPath);
+    private async _isMailboxSelectable(mailboxPath: string): Promise<boolean> {
+        const mailbox = await this._findMailbox(mailboxPath);
         if (!mailbox) {
             return false;
         }
@@ -270,22 +262,22 @@ export class ImapInstance {
     async getMessages(mailboxPath: string, pageNumber: number = 1, pageSize: number = 25): Promise<GlancePage> {
         const emptyPage: GlancePage = { items: [], currentPage: 0, lastPage: 0 };
 
-        if (!this.isAuthenticated()) {
+        if (!this._isAuthenticated()) {
             return emptyPage;
         }
 
-        if (!await this.isMailboxSelectable(mailboxPath)) {
+        if (!await this._isMailboxSelectable(mailboxPath)) {
             return emptyPage;
         }
 
-        const mailboxLock = await this.imapClient!.getMailboxLock(mailboxPath);
+        const mailboxLock = await this._client!.getMailboxLock(mailboxPath);
 
         try {
-            if (!this.imapClient!.mailbox) {
+            if (!this._client!.mailbox) {
                 return emptyPage;
             }
 
-            const totalMessages = this.imapClient!.mailbox.exists;
+            const totalMessages = this._client!.mailbox.exists;
             if (totalMessages === 0) {
                 return emptyPage;
             }
@@ -306,7 +298,7 @@ export class ImapInstance {
 
             const fetchRange = `${sequenceStart}:${sequenceEnd}`;
             const glances: EmailGlance[] = [];
-            for await (const message of this.imapClient!.fetch(fetchRange, { envelope: true, flags: true })) {
+            for await (const message of this._client!.fetch(fetchRange, { envelope: true, flags: true })) {
                 const glance = mapEmailGlance(message, mailboxPath);
                 if (glance) {
                     glances.push(glance);
@@ -346,7 +338,7 @@ export class ImapInstance {
             assert(!isNaN(uniqueId) && uniqueId >= 0, "every uniqueId must be a non-negative number");
         }
 
-        if (!this.imapClient || !this.isAuthenticated()) {
+        if (!this._client || !this._isAuthenticated()) {
             return false;
         }
 
@@ -355,14 +347,14 @@ export class ImapInstance {
         }
 
         const uidRange = uniqueIds.join(",");
-        const mailboxLock = await this.imapClient.getMailboxLock(mailboxPath);
+        const mailboxLock = await this._client.getMailboxLock(mailboxPath);
 
         try {
             if (flagsToAdd.length > 0) {
-                await this.imapClient.messageFlagsAdd(uidRange, flagsToAdd, { uid: true });
+                await this._client.messageFlagsAdd(uidRange, flagsToAdd, { uid: true });
             }
             if (flagsToRemove.length > 0) {
-                await this.imapClient.messageFlagsRemove(uidRange, flagsToRemove, { uid: true });
+                await this._client.messageFlagsRemove(uidRange, flagsToRemove, { uid: true });
             }
         } finally {
             mailboxLock.release();
@@ -383,7 +375,7 @@ export class ImapInstance {
             assert(!isNaN(uniqueId) && uniqueId >= 0, "every uniqueId must be a non-negative number");
         }
 
-        if (!this.imapClient || !this.isAuthenticated()) {
+        if (!this._client || !this._isAuthenticated()) {
             return false;
         }
 
@@ -392,10 +384,10 @@ export class ImapInstance {
         }
 
         const uidRange = uniqueIds.join(",");
-        const mailboxLock = await this.imapClient.getMailboxLock(mailboxPathSource);
+        const mailboxLock = await this._client.getMailboxLock(mailboxPathSource);
 
         try {
-            const result = await this.imapClient.messageMove(uidRange, mailboxPathDestination, { uid: true });
+            const result = await this._client.messageMove(uidRange, mailboxPathDestination, { uid: true });
             if (!result) {
                 return false;
             }
@@ -416,7 +408,7 @@ export class ImapInstance {
      * @param mimeType - The MIME type to search for, for example "text/html".
      * @returns The IMAP part identifier of the matching part, or null.
      */
-    private findMessagePartByType(node: MessageStructureObject | undefined, mimeType: string): string | null {
+    private _findMessagePartByType(node: MessageStructureObject | undefined, mimeType: string): string | null {
         if (!node) {
             return null;
         }
@@ -430,7 +422,7 @@ export class ImapInstance {
         }
 
         for (const child of node.childNodes) {
-            const found = this.findMessagePartByType(child, mimeType);
+            const found = this._findMessagePartByType(child, mimeType);
             if (found) {
                 return found;
             }
@@ -441,7 +433,7 @@ export class ImapInstance {
     /**
      * @brief Collects every inline image referenced from the message body.
      */
-    private findInlineImages(rootNode: MessageStructureObject): MessageStructureObject[] {
+    private _findInlineImages(rootNode: MessageStructureObject): MessageStructureObject[] {
         const result: MessageStructureObject[] = [];
 
         const recurseIntoNode = (node: MessageStructureObject): void => {
@@ -473,13 +465,13 @@ export class ImapInstance {
      * email view tolerates a missing body better than an unhandled rejection
      * that bubbles up to the route handler.
      */
-    private async readMessagePartAsString(messageUid: number, partId: string): Promise<string> {
-        if (!this.imapClient || !this.isAuthenticated()) {
+    private async _readMessagePartAsString(messageUid: number, partId: string): Promise<string> {
+        if (!this._client || !this._isAuthenticated()) {
             return "";
         }
 
         try {
-            const downloadResult = await this.imapClient.download(messageUid, partId, { uid: true });
+            const downloadResult = await this._client.download(messageUid, partId, { uid: true });
             if (!downloadResult || !downloadResult.content) {
                 return "";
             }
@@ -509,7 +501,7 @@ export class ImapInstance {
      * @param bodyParts - The map of body-part id to raw buffer returned by the parallel `fetchOne` call, or undefined when the fetch was skipped.
      * @returns The HTML with every resolvable `cid:` reference rewritten to a data URI; unresolved references are left untouched.
      */
-    private applyInlineImages(html: string, inlineImages: MessageStructureObject[], bodyParts: Map<string, Buffer> | undefined): string {
+    private _applyInlineImages(html: string, inlineImages: MessageStructureObject[], bodyParts: Map<string, Buffer> | undefined): string {
         if (!bodyParts) {
             return html;
         }
@@ -546,8 +538,8 @@ export class ImapInstance {
      * @param mailboxPath - The IMAP path of the mailbox; used only to populate the returned DTO.
      * @returns The full EmailMessage DTO, or null when the message has no envelope or cannot be fetched.
      */
-    private async fetchMessageContent(messageUid: number, mailboxPath: string): Promise<EmailMessage | null> {
-        const fetchedMessage = await this.imapClient!.fetchOne(messageUid, {
+    private async _fetchMessageContent(messageUid: number, mailboxPath: string): Promise<EmailMessage | null> {
+        const fetchedMessage = await this._client!.fetchOne(messageUid, {
             envelope: true,
             flags: true,
             bodyStructure: true
@@ -557,25 +549,25 @@ export class ImapInstance {
             return null;
         }
 
-        const htmlPartId = this.findMessagePartByType(fetchedMessage.bodyStructure, "text/html");
-        const textPartId = this.findMessagePartByType(fetchedMessage.bodyStructure, "text/plain");
+        const htmlPartId = this._findMessagePartByType(fetchedMessage.bodyStructure, "text/html");
+        const textPartId = this._findMessagePartByType(fetchedMessage.bodyStructure, "text/plain");
 
         let htmlContent: string | undefined;
         let textContent: string | undefined;
 
         // Check for HTML part first, if it's there then use it otherwise look for the text part
         if (htmlPartId) {
-            const inlineImages = this.findInlineImages(fetchedMessage.bodyStructure);
+            const inlineImages = this._findInlineImages(fetchedMessage.bodyStructure);
             const inlineImagePartIds = inlineImages.filter(inlineImageNode => inlineImageNode.part).map(inlineImageNode => inlineImageNode.part!);
 
             const [rawHtml, inlineFetched] = await Promise.all([
-                this.readMessagePartAsString(messageUid, htmlPartId),
-                inlineImagePartIds.length > 0 ? this.imapClient!.fetchOne(messageUid, { bodyParts: inlineImagePartIds }, { uid: true }) : Promise.resolve(null)
+                this._readMessagePartAsString(messageUid, htmlPartId),
+                inlineImagePartIds.length > 0 ? this._client!.fetchOne(messageUid, { bodyParts: inlineImagePartIds }, { uid: true }) : Promise.resolve(null)
             ]);
 
-            htmlContent = inlineFetched ? this.applyInlineImages(rawHtml, inlineImages, inlineFetched.bodyParts) : rawHtml;
+            htmlContent = inlineFetched ? this._applyInlineImages(rawHtml, inlineImages, inlineFetched.bodyParts) : rawHtml;
         } else if (textPartId) {
-            textContent = await this.readMessagePartAsString(messageUid, textPartId);
+            textContent = await this._readMessagePartAsString(messageUid, textPartId);
         }
 
         return mapEmailMessage({
@@ -599,18 +591,18 @@ export class ImapInstance {
         assert(uniqueId >= 0, "uniqueId must be non-negative");
         const messageUid = Math.round(uniqueId);
 
-        if (!this.imapClient || !this.isAuthenticated()) {
+        if (!this._client || !this._isAuthenticated()) {
             return null;
         }
 
-        if (!await this.isMailboxSelectable(mailboxPath)) {
+        if (!await this._isMailboxSelectable(mailboxPath)) {
             return null;
         }
 
-        const mailboxLock = await this.imapClient.getMailboxLock(mailboxPath);
+        const mailboxLock = await this._client.getMailboxLock(mailboxPath);
 
         try {
-            return await this.fetchMessageContent(messageUid, mailboxPath);
+            return await this._fetchMessageContent(messageUid, mailboxPath);
         } finally {
             mailboxLock.release();
         }
@@ -642,21 +634,21 @@ export class ImapInstance {
             return [];
         }
 
-        if (!this.imapClient || !this.isAuthenticated()) {
+        if (!this._client || !this._isAuthenticated()) {
             return [];
         }
 
-        if (!await this.isMailboxSelectable(mailboxPath)) {
+        if (!await this._isMailboxSelectable(mailboxPath)) {
             return [];
         }
 
-        const mailboxLock = await this.imapClient.getMailboxLock(mailboxPath);
+        const mailboxLock = await this._client.getMailboxLock(mailboxPath);
         const results: EmailMessage[] = [];
 
         try {
             for (const uniqueId of uniqueIds) {
                 const messageUid = Math.round(uniqueId);
-                const message = await this.fetchMessageContent(messageUid, mailboxPath);
+                const message = await this._fetchMessageContent(messageUid, mailboxPath);
                 if (message) {
                     results.push(message);
                 }
@@ -677,31 +669,19 @@ export class ImapInstance {
     async downloadMessagePart(mailboxPath: string, uniqueId: number, partId: string): Promise<DownloadObject | null> {
         assert(uniqueId >= 0, "uniqueId must be non-negative");
 
-        if (!this.imapClient) {
+        if (!this._client) {
             return null;
         }
 
-        const mailboxLock = await this.imapClient.getMailboxLock(mailboxPath);
+        const mailboxLock = await this._client.getMailboxLock(mailboxPath);
 
         try {
-            return await this.imapClient.download(uniqueId, partId, { uid: true });
+            return await this._client.download(uniqueId, partId, { uid: true });
         } catch (thrownError: any) {
             console.error("downloadMessagePart failed:", thrownError);
             return null;
         } finally {
             mailboxLock.release();
         }
-    }
-}
-
-export namespace ImapInstance {
-    export enum Status {
-        LOGGED_IN,
-        LOGGED_OUT,
-        AUTH_ERROR,
-        NO_SERVER,
-        NOT_CONNECTED,
-        UNDEFINED,
-        UNKNOWN_ERROR,
     }
 }

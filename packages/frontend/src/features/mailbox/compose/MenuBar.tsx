@@ -125,7 +125,7 @@ function FontPicker({ value, onChange }: FontPickerProps) {
                 'text-xs font-medium text-kiwi-dark-black ' +
                 'transition-colors duration-150 ' +
                 'hover:bg-kiwi-light-grey/40 ' +
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60'
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-green/60'
             }
             style={{ fontFamily: value || undefined }}
         >
@@ -240,7 +240,7 @@ function EmojiPicker({ onPick }: EmojiPickerProps) {
                                 'text-xl leading-none ' +
                                 'transition-colors duration-100 ' +
                                 'hover:bg-kiwi-light-grey/60 ' +
-                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60'
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-green/60'
                             }
                         >
                             {item.glyph}
@@ -271,10 +271,10 @@ const toolButtonBase =
     'flex items-center justify-center h-8 min-w-8 px-1.5 rounded-md text-kiwi-dark-black ' +
     'transition-colors duration-150 ' +
     'hover:bg-kiwi-light-grey/70 ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60 ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-green/60 ' +
     'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent';
 
-const toolButtonActive = 'bg-kiwi-middle-grey/60 text-kiwi-black';
+const toolButtonActive = 'bg-kiwi-green/25 text-kiwi-black';
 
 function ToolButton({ onClick, label, isActive, disabled, icon: Icon, children }: ToolButtonProps) {
     return (

@@ -22,6 +22,7 @@ import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { respondIfCredentialsRejected } from "../utils/status.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -73,6 +74,9 @@ router.get("/mailboxes/:mailboxPath/messages", async (request: Request, response
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to list messages" });
     }
@@ -114,6 +118,9 @@ router.get("/mailboxes/:mailboxPath/messages/bodies", async (request: Request, r
             imapPool.release(loginBody);
         }
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to fetch messages" });
     }
@@ -152,6 +159,9 @@ router.get("/mailboxes/:mailboxPath/messages/:uniqueId", async (request: Request
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to fetch message" });
     }
@@ -195,6 +205,9 @@ router.patch("/mailboxes/:mailboxPath/messages/flags/change", async (request: Re
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to update flags" });
     }
@@ -237,6 +250,9 @@ router.patch("/mailboxes/:mailboxPath/messages/move", async (request: Request<{ 
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to move messages" });
     }
