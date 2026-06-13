@@ -1,4 +1,4 @@
-import { ArrowsPointingInIcon, ArrowsPointingOutIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { ArrowPathIcon, ArrowsPointingInIcon, ArrowsPointingOutIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { PaperAirplaneIcon, PaperClipIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
@@ -19,14 +19,12 @@ export default function ComposeBox() {
     const { authFetch, email, name } = useContext(AuthContext);
     const setMessage = useToastStore((state) => state.setMessage);
 
-    async function handleSend(event: React.MouseEvent<HTMLButtonElement>) {
-        event.preventDefault();
-
+    async function handleSend(): Promise<boolean> {
         // TODO: Handle the UI when the user forgets to add stuff like a recipient, subject
         const draft = formRef.current?.getDraft();
 
         if (!draft) {
-            return;
+            return false;
         }
 
         const emailToSend: EmailToSend = {
@@ -56,7 +54,10 @@ export default function ComposeBox() {
             // TODO: Also make it obvious to the user that the mail is sending
             // TODO: Handle what happens when the emails get rejected
             setMessage("Message sent!", 3000);
+            return true;
         }
+
+        return false;
     }
 
     useEffect(() => {
@@ -106,16 +107,34 @@ export default function ComposeBox() {
             <div className={minimized ? "invisible" : "flex flex-1 flex-col overflow-y-auto p-4"}>
                 <EmailEditor ref={editorRef} />
             </div>
-            {!minimized && <Footer onSend={handleSend} />}
+            {!minimized && <Footer sendEmail={handleSend} />}
         </section>
     );
 }
 
 interface FooterProps {
-    onSend: (event: React.MouseEvent<HTMLButtonElement>) => void
+    sendEmail: () => Promise<boolean>
 }
 
-function Footer({ onSend }: FooterProps) {
+type SendingStatus = 'drafting' | 'sending' | 'succeeded' | 'failed';
+
+function Footer({ sendEmail }: FooterProps) {
+
+    const [sendingStatus, setSendingStatus] = useState<SendingStatus>('drafting');
+
+    async function handleSend(event: React.MouseEvent<HTMLButtonElement>) {
+        event.preventDefault();
+        setSendingStatus('sending');
+        const sent = await sendEmail();
+
+        if (sent) {
+            setSendingStatus('succeeded');
+        }
+
+        setSendingStatus('failed');
+    }
+
+
     return (
         <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-kiwi-light-grey bg-kiwi-light-grey/20 px-3 py-2">
             <div className="flex items-center gap-2">
@@ -123,8 +142,9 @@ function Footer({ onSend }: FooterProps) {
                     text="Send"
                     buttonSize="md"
                     reverseColours
-                    icon={<PaperAirplaneIcon className="size-4 -rotate-45" aria-hidden="true" />}
-                    onClick={(event) => onSend(event)}
+                    icon={getStatusIcon(sendingStatus)}
+                    disabled={sendingStatus === 'sending'}
+                    onClick={(event) => handleSend(event)}
                 />
                 <Button
                     text=""
@@ -143,4 +163,18 @@ function Footer({ onSend }: FooterProps) {
             />
         </footer>
     );
+}
+
+function getStatusIcon(status: SendingStatus) {
+    switch (status) {
+        case 'drafting':
+            return (<PaperAirplaneIcon aria-hidden="true" className="size-4 -rotate-45" />);
+        default:
+        case 'sending':
+            return (<ArrowPathIcon aria-hidden="true" className="size-4 animate-spin" />);
+
+
+        // TODO: Case failed and succeeded
+
+    }
 }
