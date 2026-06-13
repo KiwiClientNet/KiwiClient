@@ -85,12 +85,17 @@ export const MailboxSchema = z.object({
 });
 
 /** @brief Schema for sending a an email message
- *
- * Extends the email message schema and adds who the email is from
  * */
-export const EmailToSendSchema = EmailMessageSchema.extend({
-    from: z.array(EmailAddressSchema)
-})
+export const EmailToSendSchema = z.object({
+    from: EmailAddressSchema,
+    to: z.array(EmailAddressSchema),
+    cc: z.array(EmailAddressSchema),
+    bcc: z.array(EmailAddressSchema),
+    replyTo: z.array(EmailAddressSchema),
+    subject: z.string(),
+    html: z.string().optional(),
+    text: z.string().optional(),
+});
 
 export type EmailAddress = z.infer<typeof EmailAddressSchema>;
 export type EmailFlags = z.infer<typeof EmailFlagsSchema>;

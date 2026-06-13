@@ -46,6 +46,7 @@ export const ServerLoginSchema = z.object({
  * @brief Request body for the private email server login endpoint.
  */
 export const LoginServerRequestSchema = z.object({
+    name: z.string(),
     email: z.string().email(),
     password: z.string().min(1),
     rememberMe: z.boolean().default(false),
@@ -60,6 +61,7 @@ export const LoginServerRequestSchema = z.object({
  * to log in again.
  */
 export const GoogleLoginSchema = z.object({
+    name: z.string(),
     serverType: z.literal('GMAIL'),
     email: z.string().email(),
     accessCode: z.string(),
@@ -83,6 +85,7 @@ export const AuthResponseSchema = z.object({
     success: z.boolean(),
     accessToken: z.string().optional(),
     email: z.string().email().optional(),
+    name: z.string().optional(),
     message: z.string().optional(),
     protocol: z.enum(['IMAP', 'SMTP']).optional(),
     field: z.enum(['host', 'port']).optional()

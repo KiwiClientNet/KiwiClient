@@ -37,6 +37,7 @@ const JWT_REFRESH_SECRET = getEnv("JWT_REFRESH_SECRET");
 const ENCRYPT_KEY = Buffer.from(getEnv("ENCRYPT_KEY"), "hex");
 
 export interface TokenPayload {
+    name: string;
     email: string;
     encryptedPassword: string;
     oAuth2RefreshToken?: string;

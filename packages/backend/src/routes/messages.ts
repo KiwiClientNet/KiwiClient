@@ -16,13 +16,17 @@ import {
     GlancePageRequestSchema,
     MessageFlagsUpdateSchema,
     MessageMoveUpdateSchema,
-    MessageMoveUpdate
+    MessageMoveUpdate,
+    EmailToSend,
+    EmailToSendResponse,
+    EmailToSendSchema
 } from "@KiwiClient/shared";
 import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
-import { imapPool } from "../connection_pool.js";
+import { imapPool, smtpPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { respondIfCredentialsRejected } from "../utils/status.js";
+import { sendRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -256,6 +260,49 @@ router.patch("/mailboxes/:mailboxPath/messages/move", async (request: Request<{ 
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to move messages" });
     }
+});
+
+router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, EmailToSend>, response: Response<EmptyResponse>) => {
+
+    // Get the email to send the request
+    const emailToSendParseResult = EmailToSendSchema.safeParse(request.body);
+
+    if (!emailToSendParseResult.success) {
+        response.status(400).json({
+            success: false,
+            code: "SMTP_MESSAGE_INVALID",
+            message: emailToSendParseResult.error.message
+        })
+        return;
+    }
+
+    const tokenPayload = response.locals.user as TokenPayload;
+
+    try {
+        const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
+        const smtpInstance = await smtpPool.acquire(loginBody);
+
+        try {
+            const succeeded = await smtpInstance.sendEmail(emailToSendParseResult.data);
+
+            if (!succeeded) {
+                response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Server failed to send message" });
+                return;
+            }
+
+            response.json({ success: true, data: {} });
+        } finally {
+            smtpPool.release(loginBody);
+        }
+
+    } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
+        console.error(thrownError);
+        response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to send message" });
+    }
+
 });
 
 export default router;

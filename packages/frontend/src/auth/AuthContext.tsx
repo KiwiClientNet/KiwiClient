@@ -13,10 +13,11 @@ import { apiFetch, type ApiFetchOptions } from "../api/client";
 import { useSelectedEmailStore } from "../store/selectedEmailStore";
 
 interface AuthContextValue {
+    name: string;
     email: string;
     accessToken: string | null;
     loading: boolean;
-    login: (token: string, email: string) => void;
+    login: (token: string, email: string, name: string) => void;
     logout: () => Promise<void>;
     authFetch: (endpoint: string, options?: ApiFetchOptions) => Promise<Response>;
 }
@@ -27,6 +28,7 @@ interface RefreshResponse {
     success: boolean;
     accessToken?: string;
     email?: string;
+    name?: string;
 }
 
 /**
@@ -51,6 +53,7 @@ async function refreshAccessToken(): Promise<RefreshResponse | null> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [accessToken, setAccessToken] = useState<string | null>(null);
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(true);
     const queryClient = useQueryClient();
@@ -73,6 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (refreshed.email) {
                 setEmail(refreshed.email);
             }
+
+            if (refreshed.name) {
+                setName(refreshed.name);
+            }
+
         }).finally(() => {
             if (!cancelled) {
                 setLoading(false);
@@ -82,9 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => { cancelled = true; };
     }, []);
 
-    const login = useCallback((token: string, userEmail: string) => {
+    const login = useCallback((token: string, userEmail: string, userName: string) => {
         setAccessToken(token);
         setEmail(userEmail);
+        setName(userName);
     }, []);
 
     /**
@@ -131,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [clearSession]);
 
     return (
-        <AuthContext value={{ email, accessToken, loading, login, logout, authFetch }}>
+        <AuthContext value={{ name, email, accessToken, loading, login, logout, authFetch }}>
             {children}
         </AuthContext>
     );

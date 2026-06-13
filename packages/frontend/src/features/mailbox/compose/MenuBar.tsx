@@ -171,8 +171,6 @@ const QUICK_EMOJIS: ReadonlyArray<{ shortcode: string; glyph: string; label: str
     { shortcode: 'wave', glyph: '👋', label: 'Wave' },
     { shortcode: 'muscle', glyph: '💪', label: 'Muscle' },
     { shortcode: 'brain', glyph: '🧠', label: 'Brain' },
-    { shortcode: 'check', glyph: '✅', label: 'Check' },
-    { shortcode: 'x', glyph: '❌', label: 'Cross' },
 ];
 
 interface EmojiPickerProps {

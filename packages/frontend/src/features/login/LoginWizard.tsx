@@ -12,7 +12,7 @@
  */
 
 import { useContext, useEffect, useRef, useState, type ComponentPropsWithoutRef, type FormEvent, type ReactNode } from "react";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
+import { ArrowPathIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
 import {
     type AuthResponse,
@@ -26,11 +26,31 @@ import { Button } from "../../components/Button";
 import { Checkbox } from "../../components/Checkbox";
 import { GoogleLogin } from "./GoogleLogin";
 
-const STEP_LABELS = ["Account", "Receiving", "Sending"] as const;
-const FINAL_STEP_INDEX = STEP_LABELS.length - 1;
-const SUCCESS_REDIRECT_DELAY_MS = 700;
+const SUCCESS_REDIRECT_DELAY_MS = 2000;
 const LOGIN_TIMEOUT_MS = 30 * 1000;
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+
+const STEPS = {
+    ACCOUNT: {
+        LABEL: "Account",
+        ENUM: 0,
+    },
+    IMAP: {
+        LABEL: "Receiving",
+        ENUM: 1,
+    },
+    SMTP: {
+        LABEL: "Sending",
+        ENUM: 2,
+    },
+    NAME: {
+        LABEL: "Name",
+        ENUM: 3,
+    },
+} as const;
+
+type STEPS = (typeof STEPS)[keyof typeof STEPS];
+const STEPS_LENGTH = Object.keys(STEPS).length;
 
 interface LoginFormValues {
     email: string;
@@ -40,6 +60,7 @@ interface LoginFormValues {
     imapPort: string;
     smtpHost: string;
     smtpPort: string;
+    name: string;
 }
 
 type FieldErrors = Partial<Record<keyof LoginFormValues, string>>;
@@ -56,7 +77,8 @@ const INITIAL_VALUES: LoginFormValues = {
     imapHost: "",
     imapPort: String(DEFAULT_IMAP_PORT),
     smtpHost: "",
-    smtpPort: String(DEFAULT_SMTP_PORT)
+    smtpPort: String(DEFAULT_SMTP_PORT),
+    name: ""
 };
 
 function isValidPort(portText: string): boolean {
@@ -97,6 +119,12 @@ function validateStep(stepIndex: number, values: LoginFormValues): FieldErrors {
         }
         if (!isValidPort(values.smtpPort)) {
             errors.smtpPort = "Port must be between 1 and 65535";
+        }
+    }
+
+    if (stepIndex === 3) {
+        if (values.name.length === 0) {
+            errors.name = "Enter your name";
         }
     }
 
@@ -142,8 +170,7 @@ function WizardField({ label, error, id, trailing, ...inputProps }: WizardFieldP
 export function LoginWizard() {
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
-
-    const [stepIndex, setStepIndex] = useState(0);
+    const [stepIndex, setStepIndex] = useState<STEPS>(STEPS.ACCOUNT);
     const [values, setValues] = useState<LoginFormValues>(INITIAL_VALUES);
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [banner, setBanner] = useState<Banner | null>(null);
@@ -176,21 +203,54 @@ export function LoginWizard() {
         }));
     }
 
-    function goToStep(nextStepIndex: number): void {
+    function goToNextStep(currentStep: string): void {
         setBanner(null);
-        setStepIndex(nextStepIndex);
+        switch (currentStep) {
+            case STEPS.ACCOUNT.LABEL:
+                setStepIndex(STEPS.IMAP);
+                return;
+            case STEPS.IMAP.LABEL:
+                setStepIndex(STEPS.SMTP);
+                return;
+            case STEPS.SMTP.LABEL:
+                setStepIndex(STEPS.NAME);
+                return;
+            case STEPS.NAME.LABEL:
+            default:
+                return;
+        }
+    }
+
+    function goToPreviousStep(currentStep: string): void {
+        setBanner(null);
+        switch (currentStep) {
+            case STEPS.ACCOUNT.LABEL:
+            default:
+                return;
+            case STEPS.IMAP.LABEL:
+                setStepIndex(STEPS.ACCOUNT);
+                return;
+            case STEPS.SMTP.LABEL:
+                setStepIndex(STEPS.IMAP);
+                return;
+            case STEPS.NAME.LABEL:
+                setStepIndex(STEPS.SMTP);
+                return;
+        }
     }
 
     function advanceStep(): void {
-        const errors = validateStep(stepIndex, values);
-        if (Object.keys(errors).length > 0) {
+        const errors = validateStep(stepIndex.ENUM, values);
+        if (Object.entries(errors).length > 0) {
             setFieldErrors(errors);
             return;
         }
-        if (stepIndex === 0) {
+
+        if (stepIndex.ENUM === 0) {
             prefillHostsFromEmail();
         }
-        goToStep(stepIndex + 1);
+
+        goToNextStep(stepIndex.LABEL);
     }
 
     /**
@@ -206,19 +266,19 @@ export function LoginWizard() {
         setBanner({ kind: "failure", message });
 
         if (statusCode === 401) {
-            setStepIndex(0);
+            setStepIndex(STEPS.ACCOUNT);
             setFieldErrors({ email: "", password: "The server rejected this email and password combination" });
             return;
         }
         if (responseBody.protocol === "IMAP") {
-            setStepIndex(1);
+            setStepIndex(STEPS.IMAP);
             setFieldErrors(responseBody.field === "port"
                 ? { imapPort: "Check the port number" }
                 : { imapHost: "Check the server address" });
             return;
         }
         if (responseBody.protocol === "SMTP") {
-            setStepIndex(2);
+            setStepIndex(STEPS.SMTP);
             setFieldErrors(responseBody.field === "port"
                 ? { smtpPort: "Check the port number" }
                 : { smtpHost: "Check the server address" });
@@ -226,16 +286,17 @@ export function LoginWizard() {
     }
 
     async function submitLogin(): Promise<void> {
-        for (const checkedStepIndex of [0, 1, 2]) {
-            const errors = validateStep(checkedStepIndex, values);
-            if (Object.keys(errors).length > 0) {
+        Object.entries(STEPS).forEach(([step, step_value]) => {
+            const errors = validateStep(step_value.ENUM, values);
+            if (STEPS_LENGTH > 0) {
                 setFieldErrors(errors);
-                goToStep(checkedStepIndex);
+                goToNextStep(step);
                 return;
             }
-        }
+        })
 
         const parseResult = LoginServerRequestSchema.safeParse({
+            name: values.name,
             email: values.email,
             password: values.password,
             rememberMe: values.rememberMe,
@@ -268,9 +329,9 @@ export function LoginWizard() {
                 return;
             }
 
-            setBanner({ kind: "success", message: "Welcome back - opening your mailbox" });
+            setBanner({ kind: "success", message: `Welcome back, ${values.name.split(' ').at(0)} - opening your mailbox` });
             redirectTimerReference.current = window.setTimeout(() => {
-                login(responseBody.accessToken!, responseBody.email ?? "");
+                login(responseBody.accessToken!, responseBody.email ?? "", responseBody.name ?? "");
                 navigate("/mail");
             }, SUCCESS_REDIRECT_DELAY_MS);
 
@@ -289,7 +350,7 @@ export function LoginWizard() {
 
     function handleSubmit(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
-        if (stepIndex < FINAL_STEP_INDEX) {
+        if (stepIndex.ENUM < STEPS.NAME.ENUM) {
             advanceStep();
             return;
         }
@@ -299,15 +360,15 @@ export function LoginWizard() {
     return (
         <form onSubmit={handleSubmit}>
             <div className="flex items-baseline justify-between mb-1">
-                <h2 className="text-2xl font-bold">{STEP_LABELS[stepIndex]}</h2>
-                <span className="text-sm opacity-60">Step {stepIndex + 1} of {STEP_LABELS.length}</span>
+                <h2 className="text-2xl font-bold">{stepIndex.LABEL}</h2>
+                <span className="text-sm opacity-60">Step {stepIndex.ENUM + 1} of {STEPS_LENGTH}</span>
             </div>
 
             <ol aria-hidden="true" className="flex gap-2 mb-6">
-                {STEP_LABELS.map((stepLabel, indicatorIndex) => (
+                {Object.entries(STEPS).map(([_step, stepEnum]) => (
                     <li
-                        key={stepLabel}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${indicatorIndex === stepIndex ? "w-8 bg-kiwi-green" : "w-4 bg-kiwi-light-black"}`}
+                        key={stepEnum.LABEL}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${stepEnum.ENUM === stepIndex.ENUM ? "w-8 bg-kiwi-green" : "w-4 bg-kiwi-light-black"}`}
                     />
                 ))}
             </ol>
@@ -315,9 +376,9 @@ export function LoginWizard() {
             <div className="overflow-hidden">
                 <div
                     className="flex transition-transform duration-300 ease-out"
-                    style={{ transform: `translateX(-${stepIndex * 100}%)` }}
+                    style={{ transform: `translateX(-${stepIndex.ENUM * 100}%)` }}
                 >
-                    <fieldset className="w-full shrink-0 space-y-4 px-1" inert={stepIndex !== 0}>
+                    <fieldset className="w-full shrink-0 space-y-4 px-1" inert={stepIndex.ENUM !== STEPS.ACCOUNT.ENUM}>
                         <WizardField
                             label="Email"
                             id="email"
@@ -355,7 +416,7 @@ export function LoginWizard() {
                         </div>
                     </fieldset>
 
-                    <fieldset className="w-full shrink-0 space-y-4 px-1" inert={stepIndex !== 1}>
+                    <fieldset className="w-full shrink-0 space-y-4 px-1" inert={stepIndex.ENUM !== STEPS.IMAP.ENUM}>
                         <p className="text-sm opacity-70">Where your mail arrives. We have guessed these from your email address - most servers use these defaults.</p>
                         <WizardField
                             label="IMAP server"
@@ -378,7 +439,7 @@ export function LoginWizard() {
                         />
                     </fieldset>
 
-                    <fieldset className="w-full shrink-0 space-y-4 px-1" inert={stepIndex !== 2}>
+                    <fieldset className="w-full shrink-0 space-y-4 px-1" inert={stepIndex.ENUM !== STEPS.SMTP.ENUM}>
                         <p className="text-sm opacity-70">Where your mail is sent from. Almost always the same server as IMAP.</p>
                         <WizardField
                             label="SMTP server"
@@ -400,15 +461,29 @@ export function LoginWizard() {
                             onChange={(event) => setField("smtpPort", event.target.value)}
                         />
                     </fieldset>
+
+                    <fieldset className="w-full shrink-0 space-y-4 px-1" inert={stepIndex.ENUM !== STEPS.NAME.ENUM}>
+                        <p className="text-sm opacity-70">The name that recipients will see when receiving your emails sent from KiwiClient.</p>
+                        <WizardField
+                            label="Name"
+                            id="Name"
+                            type="text"
+                            autoComplete="off"
+                            placeholder="your name"
+                            value={values.name}
+                            error={fieldErrors.name}
+                            onChange={(event) => setField("name", event.target.value)}
+                        />
+                    </fieldset>
                 </div>
             </div>
 
             <div className="flex gap-3 mt-6">
-                {stepIndex > 0 && (
-                    <Button text="Back" type="button" disabled={isSubmitting} onClickFunction={() => goToStep(stepIndex - 1)} />
+                {stepIndex.ENUM > STEPS.ACCOUNT.ENUM && (
+                    <Button text="Back" type="button" disabled={isSubmitting} onClickFunction={() => goToPreviousStep(stepIndex.LABEL)} />
                 )}
                 <Button
-                    text={stepIndex < FINAL_STEP_INDEX ? "Next" : "Login"}
+                    text={stepIndex.ENUM < STEPS.NAME.ENUM ? "Next" : "Login"}
                     type="submit"
                     reverseColours={true}
                     disabled={isSubmitting}
@@ -416,7 +491,7 @@ export function LoginWizard() {
                 />
             </div>
 
-            {stepIndex === 0 && (
+            {stepIndex.ENUM === STEPS.ACCOUNT.ENUM && (
                 <div className="mt-6 space-y-4">
                     <hr className="border-t border-kiwi-light-black" />
                     <GoogleLogin
@@ -429,8 +504,9 @@ export function LoginWizard() {
 
             <div aria-live="polite" className="min-h-12 mt-4">
                 {banner && (
-                    <p className={`rounded-lg p-3 text-sm text-center text-kiwi-white ${banner.kind === "failure" ? "bg-kiwi-failure" : "bg-kiwi-success"}`}>
+                    <p className={`rounded-lg p-3 text-sm text-center text-kiwi-white flex flex-row justify-between items-center ${banner.kind === "failure" ? "bg-kiwi-failure" : "bg-kiwi-success"}`}>
                         {banner.message}
+                        {banner.kind === "success" && <ArrowPathIcon className="text-kiwi-white size-4 animate-spin" />}
                     </p>
                 )}
             </div>

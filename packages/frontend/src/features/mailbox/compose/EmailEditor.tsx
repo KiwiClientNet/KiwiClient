@@ -4,6 +4,7 @@ import Link from '@tiptap/extension-link'
 import StarterKit from '@tiptap/starter-kit'
 import Emoji from '@tiptap/extension-emoji'
 import MenuBar from './MenuBar'
+import { forwardRef, useImperativeHandle } from 'react'
 
 // See https://tiptap.dev/docs/editor/extensions/marks/link for link information
 const extensions = [TextStyleKit, StarterKit, Emoji, Link.configure({
@@ -66,14 +67,22 @@ const extensions = [TextStyleKit, StarterKit, Emoji, Link.configure({
     },
 }),]
 
-export default function EmailEditor() {
+export interface EmailEditorHandle {
+    getHtml: () => string;
+}
+
+const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
     const editor = useEditor({
         extensions,
         content: `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`,
         parseOptions: {
             preserveWhitespace: 'full',
-        },
-    })
+        }
+    });
+
+    useImperativeHandle(ref, () => ({
+        getHtml: () => editor?.getHTML() ?? ''
+    }), [editor]);
 
     return (
         <div className="flex flex-1 flex-col gap-2 min-h-0">
@@ -98,4 +107,7 @@ export default function EmailEditor() {
             <MenuBar editor={editor} />
         </div>
     )
-}
+
+})
+
+export default EmailEditor;

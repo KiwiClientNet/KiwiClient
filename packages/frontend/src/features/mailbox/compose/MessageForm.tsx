@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useComposeEmailStore } from '../../../store/composeEmailStore';
+import type { EmailAddress } from '@KiwiClient/shared';
 
 /**
  * Permissive but not RFC-5322 strict. Catches typos like missing `@` or TLD,
@@ -138,14 +139,25 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
     );
 }
 
-export default function MessageForm() {
+interface MessageFormValues {
+    to: EmailAddress[];
+    cc: EmailAddress[];
+    bcc: EmailAddress[];
+    subject: string;
+}
+
+export interface MessageFormHandle {
+    getDraft: () => MessageFormValues;
+    clearDraft: () => void;
+}
+
+const MessageForm = forwardRef<MessageFormHandle>((_props, ref) => {
     const [to, setTo] = useState<Recipient[]>([]);
     const [cc, setCc] = useState<Recipient[]>([]);
     const [bcc, setBcc] = useState<Recipient[]>([]);
     const [showCc, setShowCc] = useState(false);
     const [showBcc, setShowBcc] = useState(false);
     const [subject, setSubject] = useState('');
-
     const hidden = useComposeEmailStore(state => state.hidden);
     const toInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,6 +166,21 @@ export default function MessageForm() {
             toInputRef.current?.focus();
         }
     }, [hidden]);
+
+    useImperativeHandle(ref, () => ({
+        getDraft: () => ({
+            to: to.filter(chip => chip.valid).map(chip => ({ address: chip.address })),
+            cc: cc.filter(chip => chip.valid).map(chip => ({ address: chip.address })),
+            bcc: bcc.filter(chip => chip.valid).map(chip => ({ address: chip.address })),
+            subject: subject
+        }),
+
+        clearDraft: () => {
+            setTo([]);
+            setCc([]);
+            setBcc([]);
+        }
+    }), [to, cc, bcc, subject])
 
     return (
         <form
@@ -217,4 +244,6 @@ export default function MessageForm() {
             </div>
         </form>
     );
-}
+})
+
+export default MessageForm;

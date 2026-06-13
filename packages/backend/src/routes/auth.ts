@@ -74,7 +74,7 @@ function sendAuthSuccessResponse(
         maxAge: rememberMe ? REFRESH_COOKIE_MAX_AGE_MS : 0
     });
 
-    response.json({ success: true, accessToken, email: payload.email });
+    response.json({ success: true, accessToken, email: payload.email, name: payload.name });
 }
 
 /**
@@ -156,7 +156,7 @@ router.post("/login", loginRateLimiter, async (request: Request<{}, {}, ServerLo
         return;
     }
 
-    const { rememberMe, email, password, advancedConfig } = requestParseResult.data;
+    const { name, rememberMe, email, password, advancedConfig } = requestParseResult.data;
 
     const loginBody: ServerLoginBody = { serverType: "PRIVATE", email, password, advancedConfig };
 
@@ -181,6 +181,7 @@ router.post("/login", loginRateLimiter, async (request: Request<{}, {}, ServerLo
     }
 
     const payload: TokenPayload = {
+        name,
         email,
         encryptedPassword: encrypt(password),
         serverType: "PRIVATE",
@@ -208,14 +209,16 @@ router.post("/google/callback", loginRateLimiter, async (request: Request<{}, {}
         const ticket = await oauthClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
         const verifiedPayload = ticket.getPayload();
 
-        if (!verifiedPayload || !verifiedPayload.email) {
+        if (!verifiedPayload || !verifiedPayload.email || !verifiedPayload.name) {
             response.status(400).json({ success: false, message: "Google login failed - invalid id token payload" });
             return;
         }
 
         const userEmail = verifiedPayload.email;
+        const userName = verifiedPayload.name;
 
         const loginBody: GoogleLoginBody = {
+            name: userName,
             serverType: "GMAIL",
             email: userEmail,
             googleRefreshToken: googleRefreshToken,
@@ -230,6 +233,7 @@ router.post("/google/callback", loginRateLimiter, async (request: Request<{}, {}
         }
 
         const payload: TokenPayload = {
+            name: userName,
             email: userEmail,
             encryptedPassword: encrypt(googleAccessToken),
             oAuth2RefreshToken: googleRefreshToken ? encrypt(googleRefreshToken) : undefined,

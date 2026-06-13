@@ -1,24 +1,52 @@
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { PaperAirplaneIcon, PaperClipIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState, type FormEvent } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
-import EmailEditor from "./EmailEditor";
-import MessageForm from "./MessageForm";
+import EmailEditor, { type EmailEditorHandle } from "./EmailEditor";
+import MessageForm, { type MessageFormHandle } from "./MessageForm";
 import { Button } from "../../../components/Button";
 import { type EmailToSend } from "@KiwiClient/shared";
+import { AuthContext } from "../../../auth/AuthContext";
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
     const [minimized, setMinimized] = useState<boolean>(false);
     const hidden = useComposeEmailStore(state => state.hidden);
     const setHidden = useComposeEmailStore(state => state.setHidden);
-    const [emailToSend, setEmailToSend] = useState<EmailToSend>();
+    const editorRef = useRef<EmailEditorHandle>(null);
+    const formRef = useRef<MessageFormHandle>(null);
+    const { authFetch, email, name } = useContext(AuthContext);
 
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    async function handleSend(event: React.MouseEvent<HTMLButtonElement>) {
         event.preventDefault();
 
+        const draft = formRef.current?.getDraft();
+
+        if (!draft) {
+            return;
+        }
+
+        const emailToSend: EmailToSend = {
+            from: { name: name, address: email },
+            ...draft,
+            replyTo: [{ name: name, address: email }],
+            html: editorRef.current?.getHtml() ?? '',
+        };
+
         // Backend call to send here
-        console.log(emailToSend);
+        const response = await authFetch('/api/messages/send', {
+            method: 'POST',
+            body: emailToSend
+        })
+
+        if (response.ok) {
+            setHidden(true);
+            setMinimized(false);
+            setFullScreen(false);
+
+            // Clear the content of the email after it's been sent
+            formRef.current?.clearDraft();
+        }
     }
 
     useEffect(() => {
@@ -64,17 +92,20 @@ export default function ComposeBox() {
                     />
                 </div>
             </header>
-            <MessageForm />
+            <MessageForm ref={formRef} />
             <div className={minimized ? "invisible" : "flex flex-1 flex-col overflow-y-auto p-4"}>
-                <EmailEditor />
+                <EmailEditor ref={editorRef} />
             </div>
-            {!minimized && <Footer />}
+            {!minimized && <Footer onSend={handleSend} />}
         </section>
     );
 }
 
+interface FooterProps {
+    onSend: (event: React.MouseEvent<HTMLButtonElement>) => void
+}
 
-function Footer() {
+function Footer({ onSend }: FooterProps) {
     return (
         <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-kiwi-light-grey bg-kiwi-light-grey/20 px-3 py-2">
             <div className="flex items-center gap-2">
@@ -83,7 +114,7 @@ function Footer() {
                     buttonSize="md"
                     reverseColours
                     icon={<PaperAirplaneIcon className="size-4 -rotate-45" aria-hidden="true" />}
-                    onClick={() => alert("Sending coming soon!")}
+                    onClick={(event) => onSend(event)}
                 />
                 <Button
                     text=""

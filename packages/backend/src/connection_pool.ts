@@ -77,7 +77,7 @@ async function prepareCredentials(loginBody: LoginBody): Promise<LoginBody> {
  *
  * Exists as an interface so the pool can be unit-tested against a fake email
  * server without touching the network, and so future auth backends can be
- * plugged in without editing the pool (open/closed).
+ * plugged in without editing the pool.
  */
 interface ConnectionFactory<TClient extends PoolableClient> {
     create(loginBody: LoginBody): Promise<TClient>;

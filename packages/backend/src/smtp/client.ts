@@ -7,7 +7,7 @@
  * pool can manage SMTP and IMAP clients through the same interface.
  */
 
-import { DEFAULT_SMTP_PORT, type GoogleLoginBody, type ServerLoginBody } from "@KiwiClient/shared";
+import { DEFAULT_SMTP_PORT, EmailMessage, EmailToSend, type GoogleLoginBody, type ServerLoginBody } from "@KiwiClient/shared";
 import nodemailer, { type Transporter } from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
 import { AbstractClient } from "../utils/abstract_client.js";
@@ -161,5 +161,34 @@ export class SmtpInstance extends AbstractClient<Transporter> {
         } catch {
             return false;
         }
+    }
+
+    async sendEmail(message: EmailToSend): Promise<boolean> {
+        if (!this._client) {
+            return false;
+        }
+
+        try {
+            const info = await this._client.sendMail({
+                from: `${message.from.name} <${message.from.address}>`,
+                to: message.to.map(person => person.address).join(", "),
+                cc: message.cc.map(person => person.address).join(", "),
+                bcc: message.bcc.map(person => person.address).join(", "),
+                replyTo: message.replyTo.map(person => person.address).join(", "),
+                subject: message.subject,
+                text: message.text ?? '',
+                html: message.html ?? '',
+
+            });
+
+            console.log("Message sent: %s", info.messageId);
+
+            return true;
+
+        } catch (error: any) {
+            console.error("Error while sending mail:", error);
+            return false;
+        }
+
     }
 }
