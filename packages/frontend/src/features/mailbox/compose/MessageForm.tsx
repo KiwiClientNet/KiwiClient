@@ -179,6 +179,7 @@ const MessageForm = forwardRef<MessageFormHandle>((_props, ref) => {
             setTo([]);
             setCc([]);
             setBcc([]);
+            setSubject('')
         }
     }), [to, cc, bcc, subject])
 

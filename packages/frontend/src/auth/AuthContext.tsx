@@ -1,14 +1,16 @@
 /**
- * @brief Holds the user's authentication state and exposes an authFetch helper.
+ * @brief Owns the user's authentication state and the auth-aware fetch helper.
  *
  * The access token lives only in memory; the long-lived refresh token is in
  * an httpOnly cookie that the backend reads through credentials: include.
- * authFetch wraps the raw apiFetch so callers do not need to attach the
- * Bearer header or handle the silent refresh on a 401 response.
+ * This module is the single owner of the silent-refresh flow: apiFetch stays
+ * a dumb HTTP client, and authFetch is the only place that attaches the Bearer
+ * header, retries a 401, and reconciles the refreshed token into React state.
  */
 
 import { createContext, useCallback, useEffect, useState, useRef, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { AuthResponse } from "@KiwiClient/shared";
 import { apiFetch, type ApiFetchOptions } from "../api/client";
 import { useSelectedEmailStore } from "../store/selectedEmailStore";
 
@@ -24,31 +26,33 @@ interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue>(null!);
 
-interface RefreshResponse {
-    success: boolean;
-    accessToken?: string;
-    email?: string;
-    name?: string;
-}
-
 /**
- * @brief Silently exchanges the refresh cookie for a fresh access token.
+ * @brief Exchanges the refresh cookie for a fresh access token.
  *
- * Returns null on failure so callers can distinguish "no session" from "we
- * have a new token". Throws nothing because every failure path should
- * lead to a graceful logout, not an exception bubbling out of an effect.
+ * Returns null on every failure path so callers can treat "no session" and
+ * "new token" uniformly without catching exceptions inside an effect.
  */
-async function refreshAccessToken(): Promise<RefreshResponse | null> {
+async function requestRefresh(): Promise<AuthResponse | null> {
     const response = await apiFetch("/api/refresh", { method: "POST" });
-    if (!response.ok) {
-        return null;
+    const location = window.location;
+
+    if (response.ok) {
+        try {
+            return (await response.json()) as AuthResponse;
+        } catch {
+            return null;
+        }
+
     }
 
-    try {
-        return await response.json();
-    } catch {
-        return null;
+    const pathNamesToAlert = ["/mail"]
+
+    if (location.pathname in pathNamesToAlert) {
+        alert("Time to login again!");
     }
+
+    return null;
+
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -61,40 +65,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const accessTokenReference = useRef<string | null>(null);
     accessTokenReference.current = accessToken;
 
+    // Holds the in-flight refresh so concurrent 401s share one request rather
+    // than each firing their own and racing to overwrite the token.
+    const refreshInFlightReference = useRef<Promise<AuthResponse | null> | null>(null);
+
+    const applyIdentity = useCallback((auth: AuthResponse) => {
+        if (auth.accessToken) {
+            setAccessToken(auth.accessToken);
+            accessTokenReference.current = auth.accessToken;
+        }
+
+        if (auth.email) {
+            setEmail(auth.email);
+        }
+
+        if (auth.name) {
+            setName(auth.name);
+        }
+    }, []);
+
+    const refresh = useCallback((): Promise<AuthResponse | null> => {
+        if (refreshInFlightReference.current) {
+            return refreshInFlightReference.current;
+        }
+
+        const inFlight = requestRefresh()
+            .then(auth => {
+                if (auth) {
+                    applyIdentity(auth);
+                }
+                return auth;
+            })
+            .finally(() => {
+                refreshInFlightReference.current = null;
+            });
+
+        refreshInFlightReference.current = inFlight;
+        return inFlight;
+    }, [applyIdentity]);
+
     useEffect(() => {
         let cancelled = false;
 
-        refreshAccessToken().then(refreshed => {
-            if (cancelled || !refreshed) {
-                return;
-            }
-
-            if (refreshed.accessToken) {
-                setAccessToken(refreshed.accessToken);
-            }
-
-            if (refreshed.email) {
-                setEmail(refreshed.email);
-            }
-
-            if (refreshed.name) {
-                setName(refreshed.name);
-            }
-
-        }).finally(() => {
+        refresh().finally(() => {
             if (!cancelled) {
                 setLoading(false);
             }
         });
 
         return () => { cancelled = true; };
-    }, []);
+    }, [refresh]);
 
     const login = useCallback((token: string, userEmail: string, userName: string) => {
-        setAccessToken(token);
-        setEmail(userEmail);
-        setName(userName);
-    }, []);
+        applyIdentity({ success: true, accessToken: token, email: userEmail, name: userName });
+    }, [applyIdentity]);
 
     /**
      * @brief Clears every trace of the session: token, identity, and cached data.
@@ -104,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      */
     const clearSession = useCallback(() => {
         setAccessToken(null);
+        accessTokenReference.current = null;
         setEmail("");
         useSelectedEmailStore.getState().clear();
         queryClient.clear();
@@ -117,8 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     /**
      * @brief Performs an API call with the current access token, retrying once on 401.
      *
-     * Reads the token through a ref so each call sees the latest value even
-     * if the token rotates between renders.
+     * Reads the token through a ref so each call sees the latest value even if
+     * the token rotates between renders, and retries with the refreshed token
+     * rather than the stale one that triggered the 401.
      */
     const authFetch = useCallback(async (endpoint: string, options: ApiFetchOptions = {}): Promise<Response> => {
         const initialResponse = await apiFetch(endpoint, { ...options, accessToken: accessTokenReference.current });
@@ -127,17 +153,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return initialResponse;
         }
 
-        const refreshed = await refreshAccessToken();
+        const refreshed = await refresh();
         if (!refreshed || !refreshed.accessToken) {
             clearSession();
             return initialResponse;
         }
 
-        setAccessToken(refreshed.accessToken);
-        accessTokenReference.current = refreshed.accessToken;
-
         return apiFetch(endpoint, { ...options, accessToken: refreshed.accessToken });
-    }, [clearSession]);
+    }, [refresh, clearSession]);
 
     return (
         <AuthContext value={{ name, email, accessToken, loading, login, logout, authFetch }}>

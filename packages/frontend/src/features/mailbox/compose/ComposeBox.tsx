@@ -7,6 +7,7 @@ import MessageForm, { type MessageFormHandle } from "./MessageForm";
 import { Button } from "../../../components/Button";
 import { type EmailToSend } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
+import { useToastStore } from "../../../store/toastStore";
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
@@ -16,10 +17,12 @@ export default function ComposeBox() {
     const editorRef = useRef<EmailEditorHandle>(null);
     const formRef = useRef<MessageFormHandle>(null);
     const { authFetch, email, name } = useContext(AuthContext);
+    const setMessage = useToastStore((state) => state.setMessage);
 
     async function handleSend(event: React.MouseEvent<HTMLButtonElement>) {
         event.preventDefault();
 
+        // TODO: Handle the UI when the user forgets to add stuff like a recipient, subject
         const draft = formRef.current?.getDraft();
 
         if (!draft) {
@@ -32,6 +35,8 @@ export default function ComposeBox() {
             replyTo: [{ name: name, address: email }],
             html: editorRef.current?.getHtml() ?? '',
         };
+
+        setMessage(`Sending message '${draft.subject}'...`);
 
         // Backend call to send here
         const response = await authFetch('/api/messages/send', {
@@ -46,6 +51,11 @@ export default function ComposeBox() {
 
             // Clear the content of the email after it's been sent
             formRef.current?.clearDraft();
+            editorRef.current?.clearEditor();
+
+            // TODO: Also make it obvious to the user that the mail is sending
+            // TODO: Handle what happens when the emails get rejected
+            setMessage("Message sent!", 3000);
         }
     }
 

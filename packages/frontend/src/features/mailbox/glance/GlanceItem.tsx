@@ -115,30 +115,29 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
                 <Checkbox checked={isChecked} onChange={onToggleCheck} />
             </div>
 
-            <button
-                onClick={handleStarClick}
-                title={isStarred ? "Unstar" : "Star"}
-                className="shrink-0 cursor-pointer p-1 hover:opacity-80 transition-opacity"
-            >
-                {isStarred
-                    ? <StarIconSolid className="size-5 text-kiwi-warning" />
-                    : <StarIconOutline className="size-5 opacity-60" />}
-            </button>
-
             <div className="flex flex-col flex-1 min-w-0 ml-2">
                 <div className="flex justify-between items-center w-full gap-4">
-                    <div className="flex flex-1 min-w-0 items-center gap-2">
+                    <div className="flex flex-1 min-w-0 max-w-9/12 items-center gap-2">
                         <span className="font-medium truncate">{counterpartName}</span>
                         <span className="text-sm opacity-60 truncate">{counterpartAddress}</span>
                     </div>
-                    <div className="shrink-0 text-xs opacity-80 whitespace-nowrap">
+                    <div className="shrink-0 text-xs opacity-80 whitespace-nowrap flex items-center h-8">
                         <span className="group-hover:hidden">{formattedDateTime}</span>
-                        <span className="hidden group-hover:flex items-center gap-1">
+                        <span className="hidden group-hover:flex items-center gap-x-1">
+                            <button
+                                onClick={handleStarClick}
+                                title={isStarred ? "Unstar" : "Star"}
+                                className="kiwi-icon-btn rounded-md hover:text-kiwi-green hover:bg-kiwi-middle-black"
+                            >
+                                {isStarred
+                                    ? <StarIconSolid className="size-4 text-kiwi-warning" />
+                                    : <StarIconOutline className="size-4 " />}
+                            </button>
                             <button
                                 type="button"
                                 title="Move mail to"
                                 onClick={handleMoveClick}
-                                className="kiwi-icon-btn p-1 rounded-md hover:text-kiwi-green hover:bg-kiwi-middle-black"
+                                className="kiwi-icon-btn rounded-md hover:text-kiwi-green hover:bg-kiwi-middle-black"
                             >
                                 <FolderInput className="size-4" />
                             </button>
@@ -147,7 +146,7 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
                                     type="button"
                                     title="Move to trash"
                                     onClick={handleTrashClick}
-                                    className="kiwi-icon-btn p-1 rounded-md hover:text-kiwi-failure hover:bg-kiwi-middle-black"
+                                    className="kiwi-icon-btn rounded-md hover:text-kiwi-failure hover:bg-kiwi-middle-black"
                                 >
                                     <Trash2 className="size-4" />
                                 </button>
@@ -174,5 +173,5 @@ function formatGlanceDateTime(dateIso: string): string {
     const emailDateTime = new Date(dateIso);
     const datePart = emailDateTime.toLocaleDateString(navigator.language);
     const timePart = emailDateTime.toLocaleTimeString(navigator.language, { hour12: false, hour: "2-digit", minute: "2-digit" });
-    return `${datePart} — ${timePart}`;
+    return `${datePart} ${timePart}`;
 }

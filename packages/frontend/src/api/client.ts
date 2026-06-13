@@ -7,8 +7,6 @@
  * same construction code as authenticated endpoints.
  */
 
-import { refreshAccessToken } from "../auth/refresh";
-
 type HttpMethod = "GET" | "POST" | "PATCH";
 
 export interface ApiFetchOptions {
@@ -68,20 +66,6 @@ export async function apiFetch(endpoint: string, options: ApiFetchOptions = {}):
         requestInit.signal = options.signal;
     }
 
-    const path = `${endpoint}${queryString}`
-    const firstAttempt = await fetch(path, requestInit);
-
-    if (firstAttempt.status !== 401) {
-        return firstAttempt;
-    }
-
-    try {
-        await refreshAccessToken();
-    } catch (error: any) {
-        console.error(error);
-        console.error("Session expired");
-        return fetch("/api/logout", { method: "POST", credentials: "include" });
-    }
-
+    const path = `${endpoint}${queryString}`;
     return fetch(path, requestInit);
 }

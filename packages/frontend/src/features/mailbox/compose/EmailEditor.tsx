@@ -69,19 +69,25 @@ const extensions = [TextStyleKit, StarterKit, Emoji, Link.configure({
 
 export interface EmailEditorHandle {
     getHtml: () => string;
+    clearEditor: () => void;
 }
+
+const INITIAL_MSG = `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`
 
 const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
     const editor = useEditor({
         extensions,
-        content: `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`,
+        content: INITIAL_MSG,
         parseOptions: {
             preserveWhitespace: 'full',
         }
     });
 
     useImperativeHandle(ref, () => ({
-        getHtml: () => editor?.getHTML() ?? ''
+        getHtml: () => editor?.getHTML() ?? '',
+        clearEditor: () => {
+            editor.commands.setContent(INITIAL_MSG);
+        }
     }), [editor]);
 
     return (
