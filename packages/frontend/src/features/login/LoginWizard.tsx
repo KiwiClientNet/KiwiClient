@@ -504,9 +504,9 @@ export function LoginWizard() {
 
             <div aria-live="polite" className="min-h-12 mt-4">
                 {banner && (
-                    <p className={`rounded-lg p-3 text-sm text-center text-kiwi-white flex flex-row justify-between items-center ${banner.kind === "failure" ? "bg-kiwi-failure" : "bg-kiwi-success"}`}>
-                        {banner.message}
-                        {banner.kind === "success" && <ArrowPathIcon className="text-kiwi-white size-4 animate-spin" />}
+                    <p className={`rounded-lg p-3 text-sm text-kiwi-white flex items-center justify-center gap-2 ${banner.kind === "failure" ? "bg-kiwi-failure" : "bg-kiwi-success"}`}>
+                        {banner.kind === "success" && <ArrowPathIcon className="size-4 shrink-0 animate-spin" />}
+                        <span>{banner.message}</span>
                     </p>
                 )}
             </div>

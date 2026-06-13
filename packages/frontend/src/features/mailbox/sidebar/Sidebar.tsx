@@ -55,7 +55,7 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                 `}
             >
                 <div className="flex items-center justify-between pl-4 md:justify-center">
-                    <Logo reverseLogo={true} width={100} height={100} linkTo="/mail" />
+                    <Logo reverseLogo={true} className="w-25 h-25" linkTo="/mail" />
                     <button
                         type="button"
                         onClick={onClose}
