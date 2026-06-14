@@ -26,6 +26,7 @@ import { strict as assert } from "node:assert";
 import { mapEmailGlance, mapEmailMessage, mapMailbox } from "./mappers.js";
 import { ClientStatus } from "../utils/status.js";
 import { AbstractClient } from "../utils/abstract_client.js";
+import MimeNode from "nodemailer/lib/mime-node/index.js";
 
 // Bounds the TCP connect and server greeting so a wrong host or port fails
 // in seconds instead of hanging until the OS socket timeout (~2 minutes).
@@ -683,5 +684,29 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
         } finally {
             mailboxLock.release();
         }
+    }
+
+    async addRawMimeToMailbox(mime: MimeNode, mailboxPath: string, messageFlags?: string[]): Promise<boolean> {
+        assert(mailboxPath.length !== 0, "A mailbox must be specified");
+
+        if (!this._client || !this._isAuthenticated()) {
+            return false;
+        }
+
+        const mailboxLock = await this._client.getMailboxLock(mailboxPath);
+
+        try {
+            const mimeBuffer = await mime.build();
+            const result = await this._client.append(mailboxPath, mimeBuffer, messageFlags)
+            if (!result) {
+                return false;
+            }
+        } catch {
+            return false;
+        }
+        finally {
+            mailboxLock.release();
+        }
+        return true;
     }
 }

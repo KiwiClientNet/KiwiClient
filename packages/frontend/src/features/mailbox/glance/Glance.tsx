@@ -20,6 +20,7 @@ import { GlanceList } from "./GlanceList";
 import { GlanceToolbar } from "./GlanceToolbar";
 import { emailQueryKey, glanceQueryKey } from "./queryKeys";
 import { useSelectedGlanceItems } from "./useSelectedGlanceItems";
+import { mailboxesQueryKey } from "../queryKeys";
 
 /**
  * Configuration for the glance background prefetch.
@@ -70,6 +71,10 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
         queryKey: glanceQueryKey(selectedMailbox.path),
         queryFn: async ({ pageParam }) => {
             setToastMessage(`Fetching ${selectedMailbox.name}...`, 3000);
+
+            // Invalidate the main mailbox tree node so that we catch any new mail when the inbox has been fetched
+            queryClient.invalidateQueries({ queryKey: mailboxesQueryKey() });
+
             const page = await fetchGlancePage({
                 authFetch,
                 mailboxPath: selectedMailbox.path,
@@ -181,7 +186,7 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
     const emailGlances = data.pages.flatMap(page => page.items).reverse();
 
     // If there are no emails in the mailbox then notify the user
-    if  (emailGlances.length === 0) {
+    if (emailGlances.length === 0) {
         return <GlanceShell selectedMailboxName={selectedMailbox.name} selectedMailboxPath={selectedMailbox.path} statusElement={<StatusComponent status="empty" message="no messages found" />} />;
     }
 

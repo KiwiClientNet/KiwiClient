@@ -21,7 +21,6 @@ import {
     snapshotGlanceAndMailboxes,
     type GlanceMutationSnapshot
 } from "./mutationCache";
-import { mailboxesQueryKey } from "../queryKeys";
 
 interface MoveMutationVariables {
     uniqueIds: number[];

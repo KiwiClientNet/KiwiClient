@@ -8,6 +8,8 @@ import { Button } from "../../../components/Button";
 import { type EmailToSend } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
 import { useToastStore } from "../../../store/toastStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { glanceQueryKey } from "../glance/queryKeys";
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
@@ -17,6 +19,7 @@ export default function ComposeBox() {
     const editorRef = useRef<EmailEditorHandle>(null);
     const formRef = useRef<MessageFormHandle>(null);
     const { authFetch, email, name } = useContext(AuthContext);
+    const queryClient = useQueryClient();
     const setMessage = useToastStore((state) => state.setMessage);
 
     async function handleSend(): Promise<boolean> {
@@ -54,6 +57,9 @@ export default function ComposeBox() {
             // TODO: Also make it obvious to the user that the mail is sending
             // TODO: Handle what happens when the emails get rejected
             setMessage("Message sent!", 3000);
+            // TODO: Error handling if the message was sent but isn't moved to the sent folder
+            // TODO: Change the "Sent" folder to the actual one (like how trash works)
+            queryClient.invalidateQueries({ queryKey: glanceQueryKey("Sent") });
             return true;
         }
 
@@ -128,7 +134,8 @@ function Footer({ sendEmail }: FooterProps) {
         const sent = await sendEmail();
 
         if (sent) {
-            setSendingStatus('succeeded');
+            // setSendingStatus('succeeded');
+            setSendingStatus('drafting'); // Return back to the default behaviour
         }
 
         setSendingStatus('failed');

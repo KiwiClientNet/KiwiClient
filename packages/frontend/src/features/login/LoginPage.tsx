@@ -34,7 +34,7 @@ export function LoginPage() {
                     <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold">KiwiClient<span className="text-kiwi-green">.</span></h1>
                     <h2 className="text-xl sm:text-2xl lg:text-4xl font-bold mt-1">Your New Email Client</h2>
                     <div className="w-12 h-1.5 bg-kiwi-green rounded-full my-4 sm:my-6 mx-auto lg:mx-0" />
-                    <p className="text-base sm:text-lg lg:text-xl opacity-80">Your server, your client, your email — built for self-hosted mail.</p>
+                    <p className="text-base sm:text-lg lg:text-xl opacity-80">Your server, your client, your email.</p>
                 </div>
             </div>
 

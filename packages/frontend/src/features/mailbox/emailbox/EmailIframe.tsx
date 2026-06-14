@@ -106,9 +106,11 @@ export function EmailIframe({ selected }: { selected: SelectedEmailReference }) 
         if (data?.html) {
             return buildIframeDocument(DOMPurify.sanitize(data.html));
         }
+
         if (data?.text) {
-            return buildIframeDocument(`<pre>${data.text}</pre>`);
+            return buildIframeDocument(`<pre>${DOMPurify.sanitize(data.text)}</pre>`);
         }
+
         return buildIframeDocument("<pre>Email not found</pre>");
     }, [status, data]);
 

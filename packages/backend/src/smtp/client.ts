@@ -9,9 +9,12 @@
 
 import { DEFAULT_SMTP_PORT, EmailMessage, EmailToSend, type GoogleLoginBody, type ServerLoginBody } from "@KiwiClient/shared";
 import nodemailer, { type Transporter } from "nodemailer";
+import MailComposer from "nodemailer/lib/mail-composer/index.js";
 import type SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
 import { AbstractClient } from "../utils/abstract_client.js";
 import { ClientStatus } from "../utils/status.js";
+import Mail from "nodemailer/lib/mailer/index.js";
+import MimeNode from "nodemailer/lib/mime-node/index.js";
 
 const SMTP_IMPLICIT_TLS_PORT = 465;
 
@@ -85,6 +88,25 @@ export class SmtpInstance extends AbstractClient<Transporter> {
             },
             logger: false
         };
+    }
+
+    /**
+     * @brief Converts an `EmailToSend` type to a `Mail.Options` type
+     *
+     * @param message - The message to convert
+     * @returns The flattened Mail.Options type
+     */
+    private _flattenEmailToSend(message: EmailToSend): Mail.Options {
+        return ({
+            from: `${message.from.name} <${message.from.address}>`,
+            to: message.to.map(person => person.address).join(", "),
+            cc: message.cc.map(person => person.address).join(", "),
+            bcc: message.bcc.map(person => person.address).join(", "),
+            replyTo: message.replyTo.map(person => person.address).join(", "),
+            subject: message.subject,
+            text: message.text ?? '',
+            html: message.html ?? '',
+        });
     }
 
     /**
@@ -163,23 +185,18 @@ export class SmtpInstance extends AbstractClient<Transporter> {
         }
     }
 
+    compileEmail(message: EmailToSend): MimeNode {
+        const mail = new MailComposer(this._flattenEmailToSend(message));
+        return mail.compile();
+    }
+
     async sendEmail(message: EmailToSend): Promise<boolean> {
         if (!this._client) {
             return false;
         }
 
         try {
-            const info = await this._client.sendMail({
-                from: `${message.from.name} <${message.from.address}>`,
-                to: message.to.map(person => person.address).join(", "),
-                cc: message.cc.map(person => person.address).join(", "),
-                bcc: message.bcc.map(person => person.address).join(", "),
-                replyTo: message.replyTo.map(person => person.address).join(", "),
-                subject: message.subject,
-                text: message.text ?? '',
-                html: message.html ?? '',
-
-            });
+            const info = await this._client.sendMail(this._flattenEmailToSend(message));
 
             console.log("Message sent: %s", info.messageId);
 
