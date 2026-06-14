@@ -8,7 +8,6 @@ import type { MailboxesResponse } from "@KiwiClient/shared";
 import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
-import { ImapInstance } from "../imap/client.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { ClientStatus, respondIfCredentialsRejected } from "../utils/status.js";
 

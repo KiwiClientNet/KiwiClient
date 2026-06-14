@@ -42,7 +42,7 @@ export function GoogleLogin({ isDisabled, setIsDisabled, onLoginFailed }: Google
                     onLoginFailed(responseBody.message ?? "Google login failed - please try again");
                     return;
                 }
-                login(responseBody.accessToken, responseBody.email ?? "");
+                login(responseBody.accessToken, responseBody.email ?? "", responseBody.name ?? "");
                 navigate("/mail");
             } catch {
                 onLoginFailed("Google login failed - please try again");
