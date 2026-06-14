@@ -20,10 +20,8 @@ router.get("/mailboxes", async (_request: Request, response: Response<MailboxesR
 
     try {
 
-        performance.mark("start");
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
         const imapInstance = await imapPool.acquire(loginBody);
-        performance.mark("login");
 
         if (imapInstance.getStatus() !== ClientStatus.LOGGED_IN) {
             response.status(401).json({ success: false, code: "AUTH_EXPIRED", message: "IMAP session expired" });
@@ -31,21 +29,13 @@ router.get("/mailboxes", async (_request: Request, response: Response<MailboxesR
         }
 
         const mailboxes = await imapInstance.getMailboxes();
-        performance.mark("mailboxes");
 
         // Get the number of unread messages in each mailbox
         const unseenResult = await imapInstance.getUnseenCount(mailboxes.map(mailbox => mailbox.path));
         mailboxes.forEach(mailbox => mailbox.unseen = unseenResult[mailbox.path]);
 
-        performance.mark("unread");
 
         imapPool.release(loginBody);
-        performance.mark("end");
-        console.log('toLogin', performance.measure('toLogin', 'start', 'login').duration);
-        console.log('toMailboxes', performance.measure('toMailboxes', 'login', 'mailboxes').duration);
-        console.log('toUnread', performance.measure('toUnread', 'mailboxes', 'unread').duration);
-        console.log('toEnd', performance.measure('toEnd', 'unread', 'end').duration);
-
         response.json({ success: true, data: mailboxes });
 
     } catch (thrownError: any) {
