@@ -2,12 +2,11 @@ import { TextStyleKit } from '@tiptap/extension-text-style'
 import { EditorContent, useEditor } from '@tiptap/react'
 import Link from '@tiptap/extension-link'
 import StarterKit from '@tiptap/starter-kit'
-import Emoji from '@tiptap/extension-emoji'
 import MenuBar from './MenuBar'
 import { forwardRef, useImperativeHandle } from 'react'
 
 // See https://tiptap.dev/docs/editor/extensions/marks/link for link information
-const extensions = [TextStyleKit, StarterKit, Emoji, Link.configure({
+const extensions = [TextStyleKit, StarterKit, Link.configure({
     openOnClick: false,
     autolink: true,
     defaultProtocol: 'https',
@@ -72,12 +71,12 @@ export interface EmailEditorHandle {
     clearEditor: () => void;
 }
 
-const INITIAL_MSG = `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`
+// const INITIAL_MSG = `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`
 
 const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
     const editor = useEditor({
         extensions,
-        content: INITIAL_MSG,
+        // content: INITIAL_MSG,
         parseOptions: {
             preserveWhitespace: 'full',
         }
@@ -86,12 +85,14 @@ const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
     useImperativeHandle(ref, () => ({
         getHtml: () => editor?.getHTML() ?? '',
         clearEditor: () => {
-            editor.commands.setContent(INITIAL_MSG);
+            // editor.commands.setContent(INITIAL_MSG);
+            editor.commands.clearContent();
         }
     }), [editor]);
 
     return (
-        <div className="flex flex-1 flex-col gap-2 min-h-0">
+        <div className="flex flex-1 flex-col gap-2 min-h-0 overflow-y-clip">
+            <MenuBar editor={editor} />
             <EditorContent
                 editor={editor}
                 className={
@@ -110,7 +111,6 @@ const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
                     'hover:[&_.ProseMirror_a]:decoration-kiwi-info'
                 }
             />
-            <MenuBar editor={editor} />
         </div>
     )
 
