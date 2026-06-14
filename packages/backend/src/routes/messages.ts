@@ -280,6 +280,7 @@ router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, E
 
     try {
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
+        const imapInstance = await imapPool.acquire(loginBody);
         const smtpInstance = await smtpPool.acquire(loginBody);
 
         try {
@@ -293,8 +294,7 @@ router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, E
 
             // Can compile the message and add to the IMAP server so it appears in the sent folder
             const messageMime = smtpInstance.compileEmail(emailToSendParseResult.data);
-            const imapInstance = await imapPool.acquire(loginBody);
-            const addedToSent = imapInstance.addRawMimeToMailbox(messageMime, "Sent", ["\\Seen"]);
+            const addedToSent = await imapInstance.addRawMimeToMailbox(messageMime, "Sent", ["\\Seen"]);
 
             if (!addedToSent) {
                 response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Server failed to add message to the sent folder" });
@@ -304,6 +304,7 @@ router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, E
             response.json({ success: true, data: {} });
         } finally {
             smtpPool.release(loginBody);
+            imapPool.release(loginBody);
         }
 
     } catch (thrownError: any) {

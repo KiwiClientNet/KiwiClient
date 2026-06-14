@@ -19,7 +19,7 @@ import {
     type DownloadObject,
     ImapFlow,
     type ImapFlowOptions,
-    type ListResponse,
+    type MailboxLockObject,
     type MessageStructureObject
 } from "imapflow";
 import { strict as assert } from "node:assert";
@@ -190,61 +190,53 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
     }
 
     /**
-     * @brief Gets the number of unseen messages in a mailbox
-     * @param mailboxPath - The mailbox path to get the unseen count 
-     * @returns The unseen count, a negative number indicates an error
+     * @brief Gets the number of unseen messages in the mailboxes given
+     * @returns Map of mailbox path to unseen count; a negative count indicates an error for that mailbox
      */
-    async getUnseenCount(mailboxPath: string): Promise<number> {
+    async getUnseenCount(mailboxPaths: string[]): Promise<Record<string, number>> {
         const ERROR = -1;
+        const mailboxUnseen: Record<string, number> = Object.fromEntries(
+            mailboxPaths.map((path) => [path, ERROR]),
+        );
+
         if (!this._isAuthenticated()) {
-            return ERROR;
+            return mailboxUnseen;
         }
 
         try {
-            const status = await this._client!.status(mailboxPath, { unseen: true });
-            return status.unseen ?? ERROR;
+            const results = await Promise.allSettled(
+                mailboxPaths.map((path) => this._client!.status(path, { unseen: true })),
+            );
 
-        } catch (error: any) {
+            results.forEach((result, index) => {
+                if (result.status === "fulfilled") {
+                    mailboxUnseen[mailboxPaths[index]] = result.value.unseen ?? ERROR;
+                }
+            });
+
+            return mailboxUnseen;
+
+        } catch (error) {
             console.error(error);
-            return -1;
+            return mailboxUnseen;
         }
     }
 
     /**
-     * @brief Finds the raw listing entry for a mailbox path, or null when absent.
+     * @brief Acquires a mailbox lock, or null when the mailbox cannot be selected.
      *
-     * Used so callers can inspect the mailbox flags before attempting to
-     * select it; some IMAP namespaces such as "[Gmail]" appear in LIST but
-     * carry the "\\Noselect" flag and reject SELECT commands outright.
+     * SELECT is the authoritative selectability check: non-existent mailboxes
+     * and "\\Noselect" namespaces such as Gmail's "[Gmail]" parent reject the
+     * command, so getMailboxLock rejects and we return null. This replaces a
+     * pre-flight LIST that cost a full round trip on every read.
      */
-    private async _findMailbox(mailboxPath: string): Promise<ListResponse | null> {
-        if (!this._isAuthenticated()) {
+    private async _tryAcquireMailboxLock(mailboxPath: string): Promise<MailboxLockObject | null> {
+        try {
+            return await this._client!.getMailboxLock(mailboxPath);
+        } catch (error) {
+            console.warn(`Cannot select mailbox ${mailboxPath}:`, error);
             return null;
         }
-
-        const availableMailboxes = await this._client!.list();
-        for (const mailbox of availableMailboxes) {
-            if (mailbox.path === mailboxPath) {
-                return mailbox;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * @brief Reports whether the given mailbox can be selected for read operations.
-     *
-     * A mailbox is selectable when it exists in the listing and does not
-     * carry the IMAP "\\Noselect" flag.
-     */
-    private async _isMailboxSelectable(mailboxPath: string): Promise<boolean> {
-        const mailbox = await this._findMailbox(mailboxPath);
-        if (!mailbox) {
-            return false;
-        }
-
-        const noSelectFlagSet = mailbox.flags && (mailbox.flags as Set<string>).has("\\Noselect");
-        return !noSelectFlagSet;
     }
 
     /**
@@ -267,11 +259,10 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
             return emptyPage;
         }
 
-        if (!await this._isMailboxSelectable(mailboxPath)) {
+        const mailboxLock = await this._tryAcquireMailboxLock(mailboxPath);
+        if (!mailboxLock) {
             return emptyPage;
         }
-
-        const mailboxLock = await this._client!.getMailboxLock(mailboxPath);
 
         try {
             if (!this._client!.mailbox) {
@@ -596,11 +587,10 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
             return null;
         }
 
-        if (!await this._isMailboxSelectable(mailboxPath)) {
+        const mailboxLock = await this._tryAcquireMailboxLock(mailboxPath);
+        if (!mailboxLock) {
             return null;
         }
-
-        const mailboxLock = await this._client.getMailboxLock(mailboxPath);
 
         try {
             return await this._fetchMessageContent(messageUid, mailboxPath);
@@ -639,11 +629,11 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
             return [];
         }
 
-        if (!await this._isMailboxSelectable(mailboxPath)) {
+        const mailboxLock = await this._tryAcquireMailboxLock(mailboxPath);
+        if (!mailboxLock) {
             return [];
         }
 
-        const mailboxLock = await this._client.getMailboxLock(mailboxPath);
         const results: EmailMessage[] = [];
 
         try {

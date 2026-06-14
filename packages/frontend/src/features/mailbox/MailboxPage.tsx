@@ -60,7 +60,7 @@ export function MailboxPage() {
 
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: mailboxesQueryKey(),
-        queryFn: () => fetchMailboxes(authFetch),
+        queryFn: ({ signal }) => fetchMailboxes(authFetch, signal),
         select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath), [])
     });
 

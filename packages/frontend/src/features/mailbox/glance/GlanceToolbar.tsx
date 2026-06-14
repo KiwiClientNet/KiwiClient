@@ -107,6 +107,7 @@ export function GlanceToolbar({
                 <ToolbarIconButton title="Move mail to" onClick={() => alert("Moving mail coming soon!")}>
                     <FolderInput className="size-5" />
                 </ToolbarIconButton>
+                {/* TODO: If in the bin/trash folder, do not need to show that the user can bin an item/ add a delete forever */}
                 <ToolbarIconButton title="Move to trash" onClick={moveSelectionToTrash} additionalStyles={["hover:text-kiwi-failure"]}>
                     <Trash2 className="size-5" />
                 </ToolbarIconButton>

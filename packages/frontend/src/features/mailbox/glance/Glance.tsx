@@ -7,8 +7,8 @@
  * than presentation details.
  */
 
-import { useContext, useEffect } from "react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useContext, useEffect } from "react";
+import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import type { EmailMessage, GlancePage } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
 import { fetchBulkBodies, fetchGlancePage } from "../../../api/messages";
@@ -86,10 +86,10 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
         },
         initialPageParam: 1,
         getNextPageParam: (lastPage: GlancePage) => lastPage.nextPage,
-        select: (queryResult) => ({
+        select: useCallback((queryResult: InfiniteData<GlancePage>) => ({
             pages: [...queryResult.pages].reverse(),
             pageParams: [...queryResult.pageParams].reverse()
-        })
+        }), [])
     });
 
     // Background prefetch: once a page lands, walk the remaining UIDs in

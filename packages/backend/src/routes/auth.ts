@@ -134,7 +134,7 @@ async function exchangeGoogleAuthCode(authorisationCode: string): Promise<Google
 
     const googleTokens = await googleResponse.json();
 
-    if (!googleTokens.access_token || !googleTokens.id_token || !googleTokens.refresh_token) {
+    if (!googleTokens.access_token || !googleTokens.id_token) {
         throw new Error("Google did not return both access and id tokens");
     }
 

@@ -39,7 +39,7 @@ export function SidebarItem({ mailboxName, unSeenEmails, isSelected, isChildrenV
             >
                 <span className="shrink-0 mr-3">{icon}</span>
                 <span className="flex-1 text-left truncate">{mailboxName}</span>
-                {unSeenEmails > 0 && <span className="kiwi-badge shrink-0">{unSeenEmails}</span>}
+                {mailboxName !== "Spam" && unSeenEmails > 0 && <span className="kiwi-badge shrink-0">{unSeenEmails}</span>}
             </button>
         </li>
     );
