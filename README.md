@@ -30,5 +30,5 @@ The `main` branch is currently representative of what's hosted on [https://kiwic
  
 - Reply + reply-all + forward 
 - Drafts 
-- Attachments — receive and send
+- Attachments: receive and send
 - Search 
