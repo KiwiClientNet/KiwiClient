@@ -70,7 +70,7 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } = useInfiniteQuery({
         queryKey: glanceQueryKey(selectedMailbox.path),
         queryFn: async ({ pageParam }) => {
-            setToastMessage(`Fetching ${selectedMailbox.name}...`, 3000);
+            setToastMessage(`Fetching ${selectedMailbox.name}...`, "loading", 3000);
 
             // Invalidate the main mailbox tree node so that we catch any new mail when the inbox has been fetched
             queryClient.invalidateQueries({ queryKey: mailboxesQueryKey() });
@@ -81,7 +81,7 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
                 pageNumber: pageParam,
                 pageSize: PAGE_SIZE
             });
-            setToastMessage(`Fetched ${selectedMailbox.name}`, 3000);
+            setToastMessage(`Fetched ${selectedMailbox.name}`, "success", 3000);
             return page;
         },
         initialPageParam: 1,

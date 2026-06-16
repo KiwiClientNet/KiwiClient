@@ -151,7 +151,11 @@ export interface MessageFormHandle {
     clearDraft: () => void;
 }
 
-const MessageForm = forwardRef<MessageFormHandle>((_props, ref) => {
+interface MessageFormProps {
+    setComposeBoxTitle: (newSubject: string) => void;
+}
+
+const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setComposeBoxTitle }, ref) => {
     const [to, setTo] = useState<Recipient[]>([]);
     const [cc, setCc] = useState<Recipient[]>([]);
     const [bcc, setBcc] = useState<Recipient[]>([]);
@@ -160,6 +164,18 @@ const MessageForm = forwardRef<MessageFormHandle>((_props, ref) => {
     const [subject, setSubject] = useState('');
     const hidden = useComposeEmailStore(state => state.hidden);
     const toInputRef = useRef<HTMLInputElement>(null);
+
+    function handleSubjectInput(event: React.ChangeEvent<HTMLInputElement>): void {
+        event.preventDefault();
+        if (event.target.value.length === 0) {
+            setComposeBoxTitle("New message");
+            setSubject("");
+            return;
+        }
+
+        setSubject(event.target.value);
+        setComposeBoxTitle(event.target.value);
+    }
 
     useEffect(() => {
         if (!hidden) {
@@ -180,7 +196,8 @@ const MessageForm = forwardRef<MessageFormHandle>((_props, ref) => {
             setCc([]);
             setBcc([]);
             setSubject('')
-        }
+        },
+
     }), [to, cc, bcc, subject])
 
     return (
@@ -233,7 +250,7 @@ const MessageForm = forwardRef<MessageFormHandle>((_props, ref) => {
                     name="subject"
                     type="text"
                     value={subject}
-                    onChange={event => setSubject(event.target.value)}
+                    onChange={event => handleSubjectInput(event)}
                     autoComplete="off"
                     data-form-type="other"
                     data-1p-ignore

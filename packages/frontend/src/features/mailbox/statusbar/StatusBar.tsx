@@ -9,10 +9,12 @@
 import { useContext } from "react";
 import { AuthContext } from "../../../auth/AuthContext";
 import { useToastStore } from "../../../store/toastStore";
+import { Status } from "../../../components/Status";
 
 export function StatusBar() {
     const { email } = useContext(AuthContext);
     const message = useToastStore((state) => state.message);
+    const status = useToastStore((state) => state.status);
 
     return (
         <div className="shrink-0 text-sm mx-2 mb-2 mt-1 md:mx-3 md:mb-3 px-4 md:px-5 py-2.5 min-h-10 kiwi-panel flex items-center gap-2 overflow-hidden">
@@ -23,6 +25,7 @@ export function StatusBar() {
             <span className="truncate opacity-70">
                 {message}
             </span>
+            <Status status={status} iconSize={5}/>
         </div>
     );
 }

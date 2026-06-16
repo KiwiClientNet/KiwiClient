@@ -7,10 +7,12 @@
  */
 
 import { create } from "zustand";
+import type { StatusKind } from "../components/Status";
 
 interface ToastStore {
     message: string;
-    setMessage: (message: string, durationMs?: number) => void;
+    setMessage: (message: string, status: StatusKind, durationMs?: number) => void;
+    status: StatusKind
 }
 
 export const useToastStore = create<ToastStore>((set) => {
@@ -18,13 +20,14 @@ export const useToastStore = create<ToastStore>((set) => {
 
     return {
         message: "",
-        setMessage: (message, durationMs) => {
+        setMessage: (message, status, durationMs) => {
             if (pendingTimeout) {
                 clearTimeout(pendingTimeout);
                 pendingTimeout = null;
             }
 
             set({ message });
+            set({ status });
 
             if (!durationMs) {
                 return;
@@ -32,8 +35,10 @@ export const useToastStore = create<ToastStore>((set) => {
 
             pendingTimeout = setTimeout(() => {
                 set({ message: "" });
+                set({ status: "none" });
                 pendingTimeout = null;
             }, durationMs);
-        }
+        },
+        status: "success"
     };
 });

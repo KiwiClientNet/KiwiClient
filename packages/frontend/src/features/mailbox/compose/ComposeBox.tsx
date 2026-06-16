@@ -21,6 +21,23 @@ export default function ComposeBox() {
     const { authFetch, email, name } = useContext(AuthContext);
     const queryClient = useQueryClient();
     const setMessage = useToastStore((state) => state.setMessage);
+    const [composeBoxTitle, setComposeBoxTitle] = useState("New message");
+    // const [editing, setEditing] = useState(false);
+
+    // useEffect(() => {
+    //     // Draft functionality?
+    //
+    // }, [editing]);
+
+    function handleClosingComposeBox(event: React.MouseEvent<SVGSVGElement, MouseEvent>): void {
+        event.stopPropagation();
+        setHidden(true);
+        setMinimized(false);
+        setFullScreen(false);
+        setComposeBoxTitle("New message");
+        formRef.current?.clearDraft();
+        editorRef.current?.clearEditor();
+    }
 
     async function handleSend(): Promise<boolean> {
         // TODO: Handle the UI when the user forgets to add stuff like a recipient, subject
@@ -37,7 +54,7 @@ export default function ComposeBox() {
             html: editorRef.current?.getHtml() ?? '',
         };
 
-        setMessage(`Sending message '${draft.subject}'...`);
+        setMessage(`Sending message '${draft.subject}'...`, "loading");
 
         // Backend call to send here
         const response = await authFetch('/api/messages/send', {
@@ -49,6 +66,7 @@ export default function ComposeBox() {
             setHidden(true);
             setMinimized(false);
             setFullScreen(false);
+            setComposeBoxTitle("New message");
 
             // Clear the content of the email after it's been sent
             formRef.current?.clearDraft();
@@ -56,7 +74,7 @@ export default function ComposeBox() {
 
             // TODO: Also make it obvious to the user that the mail is sending
             // TODO: Handle what happens when the emails get rejected
-            setMessage("Message sent!", 3000);
+            setMessage("Message sent!", "success", 3000);
             // TODO: Error handling if the message was sent but isn't moved to the sent folder
             // TODO: Change the "Sent" folder to the actual one (like how trash works)
             queryClient.invalidateQueries({ queryKey: glanceQueryKey("Sent") });
@@ -85,7 +103,7 @@ export default function ComposeBox() {
                 className="flex h-11 shrink-0 items-center justify-between bg-kiwi-light-grey px-3 cursor-pointer"
                 onClick={() => minimized && setMinimized(false)}
             >
-                <span className="truncate text-sm font-semibold">New message</span>
+                <span className="truncate text-sm font-semibold">{composeBoxTitle}</span>
                 <div className="flex items-center gap-4">
                     <MinusIcon
                         className="size-5 cursor-pointer hidden md:block hover:bg-kiwi-white duration-100 transition-colors rounded-sm"
@@ -105,11 +123,11 @@ export default function ComposeBox() {
                     )}
                     <XMarkIcon
                         className="size-5 cursor-pointer hover:bg-kiwi-white duration-100 transition-colors rounded-sm"
-                        onClick={(event) => { event.stopPropagation(); setHidden(!hidden); }}
+                        onClick={event => handleClosingComposeBox(event)}
                     />
                 </div>
             </header>
-            <MessageForm ref={formRef} />
+            <MessageForm setComposeBoxTitle={setComposeBoxTitle} ref={formRef} />
             <div className={minimized ? "invisible" : "flex flex-1 flex-col overflow-y-auto p-4"}>
                 <EmailEditor ref={editorRef} />
             </div>
