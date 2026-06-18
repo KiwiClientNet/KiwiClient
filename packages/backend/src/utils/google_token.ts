@@ -1,4 +1,4 @@
-import deduplicate from "../../../shared/src/map.js";
+import { deduplicate } from "@KiwiClient/shared";
 import { getEnv } from "../auth_sessions.js";
 import crypto from 'crypto';
 
