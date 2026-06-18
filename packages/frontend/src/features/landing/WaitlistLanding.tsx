@@ -30,13 +30,13 @@ export default function WaitlistLanding() {
         : "Currently in development — join the waitlist and help shape KiwiClient.";
 
     return (
-        <div className="h-dvh flex flex-col overflow-hidden px-6 sm:px-12 py-6 sm:py-8">
+        <div className="min-h-dvh lg:h-dvh flex flex-col lg:overflow-hidden px-6 sm:px-12 py-6 sm:py-8">
             <main className="flex-1 min-h-0 grid lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12 items-center">
-                <div className="hidden lg:flex justify-center min-h-0 animate-kiwi-rise [animation-delay:650ms]">
+                <div className="flex justify-center min-h-0 order-last lg:order-1 animate-kiwi-rise [animation-delay:650ms]">
                     <Slideshow />
                 </div>
 
-                <section className="flex flex-col min-w-0">
+                <section className="flex flex-col min-w-0 lg:order-2">
                     <Link to="/" className="flex items-center gap-2 no-underline hover:text-kiwi-white self-start">
                         <Logo className="w-10 h-10" link={false} reverseLogo={true} />
                         <span className="font-bold text-lg">KiwiClient</span>
