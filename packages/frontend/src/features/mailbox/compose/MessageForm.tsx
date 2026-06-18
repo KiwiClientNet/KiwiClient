@@ -92,12 +92,12 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
             <label htmlFor={id} className="mt-1 w-16 shrink-0 text-sm font-semibold uppercase tracking-wide text-kiwi-dark-grey" >
                 {label}
             </label>
-            <div className="flex flex-1 flex-wrap items-center gap-1.5">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                 {value.map(chip => (
                     <span
                         key={chip.id}
                         className={
-                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-sm ' +
+                            'inline-flex min-w-0 max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-sm ' +
                             (chip.valid
                                 ? 'bg-kiwi-light-grey/60 text-kiwi-black'
                                 : 'bg-kiwi-failure/10 text-kiwi-failure ring-1 ring-kiwi-failure/50')
@@ -130,7 +130,7 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
                     data-1p-ignore
                     data-lpignore="true"
                     data-bwignore
-                    className="min-w-36 flex-1 bg-transparent text-sm leading-6 outline-none placeholder:text-kiwi-middle-grey"
+                    className="min-w-24 flex-1 bg-transparent text-sm leading-6 outline-none placeholder:text-kiwi-middle-grey"
                     placeholder={value.length === 0 ? 'name@example.com' : ''}
                 />
             </div>

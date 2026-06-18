@@ -60,9 +60,6 @@ export function useMessageMoveMutation() {
             adjustMailboxUnseen(queryClient, mailboxPathSource, -previouslyUnseenInSource);
             adjustMailboxUnseen(queryClient, mailboxPathTarget, previouslyUnseenInSource);
 
-            // Invalidate the cache once everything has moved
-            invalidateGlanceAndMailboxes(queryClient, [mailboxPathSource, mailboxPathTarget]);
-
             return snapshot;
         },
 

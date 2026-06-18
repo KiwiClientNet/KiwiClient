@@ -113,6 +113,7 @@ export function GlanceToolbar({
                 </ToolbarIconButton>
             </div>
 
+            {/* TODO: Add a refresh button to fetch new emails in the inbox (invalidate the query) */}
             <div className="flex-col flex-1 min-w-0 mr-2 font-bold hidden md:block text-right">
                 {selectedMailboxName}<span className="text-kiwi-green">.</span>
             </div>

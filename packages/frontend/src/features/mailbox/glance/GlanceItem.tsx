@@ -102,14 +102,14 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
             ? "border-kiwi-green/40 bg-kiwi-light-black"
             : isRead
                 ? "border-transparent bg-kiwi-dark-black"
-                : "border-transparent border-l-kiwi-green bg-kiwi-middle-black";
+                : "border-transparent border-l-kiwi-green bg-kiwi-middle-black border-r-kiwi-green";
     const subjectStyle = isRead ? "font-normal opacity-70" : "font-bold";
 
     return (
         <div
             ref={referenceObject}
             onClick={handleRowClick}
-            className={`group flex flex-row items-center h-20 gap-1 my-1 p-3 pl-4 shrink-0 border border-l-2 rounded-2xl cursor-pointer transition-colors hover:bg-kiwi-light-black ${rowState}`}
+            className={`group flex flex-row items-center h-20 gap-1 my-1 p-3 pl-4 shrink-0 border border-l-2 border-r-2 rounded-2xl cursor-pointer transition-colors hover:bg-kiwi-light-black ${rowState}`}
         >
             <div className="flex justify-center px-2">
                 <Checkbox checked={isChecked} onChange={onToggleCheck} />

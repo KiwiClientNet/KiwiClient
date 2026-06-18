@@ -74,6 +74,10 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
 
             // Invalidate the main mailbox tree node so that we catch any new mail when the inbox has been fetched
             queryClient.invalidateQueries({ queryKey: mailboxesQueryKey() });
+            // TODO: As the main side-bar node gets invalidated, we update the
+            // unseen-count of messages, so now we will need to invalidate the
+            // first page if the count has changed so the first page is
+            // refetched again with the updated new messages
 
             const page = await fetchGlancePage({
                 authFetch,
