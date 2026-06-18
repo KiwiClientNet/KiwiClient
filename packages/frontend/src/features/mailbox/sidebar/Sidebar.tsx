@@ -1,16 +1,14 @@
 /**
- * @brief The full left-rail sidebar with the mailbox tree, settings, and logout.
+ * @brief The full left-rail sidebar with the compose button and mailbox tree.
  *
  * Renders the forest of mailbox trees recursively through SidebarTreeNode
  * and exposes a callback so the parent page can swap the selected mailbox
  * without owning the tree-building logic.
  */
 
-import { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { AuthContext } from "../../../auth/AuthContext";
-import { BorderlessButton, Button } from "../../../components/Button";
+import { Button } from "../../../components/Button";
 import type { MailboxTreeNode } from "../../../domain/mailboxTree";
 import type { MailboxSelection } from "../types";
 import { SidebarItem } from "./SidebarItem";
@@ -26,13 +24,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose }: SidebarProps) {
-    const { logout } = useContext(AuthContext);
-    const navigate = useNavigate();
     const setHidden = useComposeEmailStore(state => state.setHidden);
-
-    const handleLogout = () => {
-        logout().then(() => navigate("/login"));
-    };
 
     return (
         <>
@@ -82,10 +74,6 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                         })}
                     </ul>
                 </nav>
-
-                <div className="flex w-full items-center gap-2 px-2 pb-2 pt-2 border-t border-kiwi-light-black md:border-0">
-                    <BorderlessButton text="Logout" onClickFunction={handleLogout} />
-                </div>
             </aside>
         </>
     );

@@ -2,8 +2,8 @@ User-agent: *
 Allow: /
 Allow: /terms-of-service
 Allow: /privacy-policy
+Allow: /login
 Disallow: /mail
-Disallow: /login
 Disallow: /unsubscribe
 Disallow: /unsubscribe-failed
 Disallow: /unsubscribed

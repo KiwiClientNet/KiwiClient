@@ -10,6 +10,7 @@ import { useContext } from "react";
 import { AuthContext } from "../../../auth/AuthContext";
 import { useToastStore } from "../../../store/toastStore";
 import { Status } from "../../../components/Status";
+import { UserMenu } from "./UserMenu";
 
 export function StatusBar() {
     const { email } = useContext(AuthContext);
@@ -17,7 +18,7 @@ export function StatusBar() {
     const status = useToastStore((state) => state.status);
 
     return (
-        <div className="shrink-0 text-sm mx-2 mb-2 mt-1 md:mx-3 md:mb-3 px-4 md:px-5 py-2.5 min-h-10 kiwi-panel flex items-center gap-2 overflow-hidden">
+        <div className="shrink-0 text-sm mx-2 mb-2 mt-1 md:mx-3 md:mb-3 px-4 md:px-5 py-2.5 min-h-10 kiwi-panel flex items-center gap-2">
             <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-kiwi-green shrink-0" />
             <span className="font-bold truncate shrink-0 max-w-[55%] sm:max-w-[40%]">
                 {`${email}${message !== "" ? ":" : ""}`}
@@ -26,6 +27,7 @@ export function StatusBar() {
                 {message}
             </span>
             <Status status={status} iconSize={5}/>
+            <UserMenu />
         </div>
     );
 }

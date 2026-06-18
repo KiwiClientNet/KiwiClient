@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState, useContext } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bars3Icon, PencilIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, MagnifyingGlassIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { AuthContext } from "../../auth/AuthContext";
 import { fetchMailboxes } from "../../api/mailboxes";
 import { MailboxPageLoading, StatusComponent } from "../../components/Loading";
@@ -127,8 +127,21 @@ export function MailboxPage() {
                     <span className="font-bold truncate">{selectedMailbox.name}<span className="text-kiwi-green">.</span></span>
                 </header>
 
-                <div className="hidden md:block m-3 mb-0 px-4 py-2 kiwi-panel text-sm opacity-60">
-                    Message search coming soon!
+                {/* Temporary search field. It is a real, focusable input so the header
+                    reads as finished, but it has no submit handler yet — message search
+                    is wired up once the backend search endpoint lands. */}
+                <div className="hidden md:block m-3 mb-0">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-kiwi-middle-grey">
+                            <MagnifyingGlassIcon aria-hidden="true" className="size-5" />
+                        </div>
+                        <input
+                            type="search"
+                            placeholder="Search messages…"
+                            aria-label="Search messages"
+                            className="kiwi-input border-kiwi-light-black bg-kiwi-middle-black py-2 pl-10 text-sm placeholder:text-kiwi-middle-grey"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row lg:gap-2 lg:m-3 lg:p-2 lg:kiwi-panel">
