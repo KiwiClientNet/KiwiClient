@@ -6,6 +6,7 @@
 import { Link } from "react-router-dom";
 import Logo from "../../components/Logo";
 import reverseLogoImage from "../../assets/logos/kiwi-logo-white.svg";
+import { useSeo } from "../../hooks/useSeo";
 
 const MANIFESTO_LINES = ["Your server", "Your client", "Your email"];
 
@@ -16,6 +17,12 @@ const FEATURE_POINTS = [
 ];
 
 export default function Landing() {
+    useSeo({
+        title: "KiwiClient — Your server, your client, your email",
+        description: "KiwiClient is a fast, private, free and open source email client built for self-hosted mail servers. Open source, no tracking, lightweight.",
+        canonicalPath: "/landing"
+    });
+
     return (
         <div className="relative h-dvh flex flex-col overflow-hidden">
             <img

@@ -53,6 +53,15 @@ export const LoginServerRequestSchema = z.object({
     advancedConfig: AdvancedEmailServerConfigSchema.optional()
 });
 
+export const LandingSignupRequestSchema = z.object({
+    email: z.string().email(),
+});
+
+export const LandingUnsubscribeRequestSchema = z.object({
+    email: z.string().email(),
+    token: z.string()
+});
+
 /**
  * @brief Stored credentials for a Gmail login obtained via Google OAuth2.
  *
@@ -94,6 +103,8 @@ export const AuthResponseSchema = z.object({
 export type AdvancedEmailServerConfig = z.infer<typeof AdvancedEmailServerConfigSchema>;
 export type ServerLoginBody = z.infer<typeof ServerLoginSchema>;
 export type ServerLoginRequestBody = z.infer<typeof LoginServerRequestSchema>;
+export type LandingSignupRequest = z.infer<typeof LandingSignupRequestSchema>;
+export type LandingUnsubscribeRequest = z.infer<typeof LandingUnsubscribeRequestSchema>;
 export type GoogleLoginBody = z.infer<typeof GoogleLoginSchema>;
 export type GoogleLoginRequestBody = z.infer<typeof GoogleLoginRequestSchema>;
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
