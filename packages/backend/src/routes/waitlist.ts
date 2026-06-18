@@ -124,4 +124,3 @@ router.get('/waitlist/count', async (_request: Request, response: Response) => {
 });
 
 export default router;
-

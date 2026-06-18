@@ -10,24 +10,23 @@ import { Link } from "react-router-dom";
 import reverseLogoImage from "../assets/logos/kiwi-logo-white.svg";
 import logoImage from "../assets/logos/kiwi-logo.svg";
 
-interface LogoProps extends React.HTMLAttributes<HTMLImageElement> {
-    width?: number;
-    height?: number;
+interface LogoProps {
+    className?: string;
     link?: boolean;
+    linkTo?: string;
     reverseLogo?: boolean;
 }
 
-export default function Logo({ width = 200, height = 200, link = true, reverseLogo = false }: LogoProps) {
+export default function Logo({ className = "w-50 h-50", link = true, linkTo = "/", reverseLogo = false }: LogoProps) {
     const baseImage = (
         <img
             src={reverseLogo ? reverseLogoImage : logoImage}
             alt="The KiwiClient logo - a black kiwi bird"
-            width={width}
-            height={height}
+            className={className}
             loading="lazy"
             decoding="async"
         />
     );
-    const elementToReturn = link ? (<Link to="/"> {baseImage} </Link>) : baseImage;
+    const elementToReturn = link ? (<Link to={linkTo}> {baseImage} </Link>) : baseImage;
     return elementToReturn;
 }

@@ -3,31 +3,27 @@ import { useState, type FormEvent } from "react";
 import { LandingSignupRequestSchema } from "@KiwiClient/shared";
 import type { LandingSignupRequest } from "@KiwiClient/shared";
 
-export type WaitlistOutcome = 'IDLE' | 'SUCCESS' | 'FAILURE';
+export type WaitlistOutcome = "IDLE" | "SUCCESS" | "FAILURE";
 
 interface LandingSignupProps {
     setOutcome: React.Dispatch<React.SetStateAction<WaitlistOutcome>>;
 }
 
 export default function LandingSignup({ setOutcome }: LandingSignupProps) {
-
     const [isDisabled, setIsDisabled] = useState(false);
 
     const postEmail = async (data: LandingSignupRequest): Promise<WaitlistOutcome> => {
-
-        const response = await fetch('/api/waitlist/add', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+        const response = await fetch("/api/waitlist/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
-        })
+        });
 
         if (!response.ok) {
-            return 'FAILURE';
+            return "FAILURE";
         }
-        return 'SUCCESS';
-    }
+        return "SUCCESS";
+    };
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -47,36 +43,29 @@ export default function LandingSignup({ setOutcome }: LandingSignupProps) {
 
             const result = await postEmail(parseResult.data);
             setOutcome(result);
-
         } catch (thrownError: unknown) {
             console.error(thrownError);
-            setIsDisabled(false);
             setOutcome("FAILURE");
         } finally {
-            setIsDisabled(false)
+            setIsDisabled(false);
         }
     }
 
     return (
-        <div>
-            <form onSubmit={handleSubmit}>
-                <div className="flex flex-row items-center gap-3">
-                    <input
-                        className="w-40 md:w-80 border rounded-lg p-3"
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="email address"
-                        required
-                        disabled={isDisabled}
-                        autoFocus={true}
-                    />
-                    <div className="md:w-64 w-48">
-                        <Button text="Add me to the waitlist" disabled={isDisabled} isLoading={isDisabled} title="Submits your email to the waitlist" />
-                    </div>
-                </div>
-            </form>
-        </div>
+        <form onSubmit={handleSubmit} className="w-full max-w-xl flex flex-col sm:flex-row items-stretch gap-3">
+            <input
+                className="kiwi-input border-kiwi-light-black bg-kiwi-middle-black flex-1"
+                type="email"
+                id="email"
+                name="email"
+                placeholder="you@example.com"
+                aria-label="Email address"
+                required
+                disabled={isDisabled}
+            />
+            <div className="sm:w-64">
+                <Button text="Add me to the waitlist" disabled={isDisabled} isLoading={isDisabled} reverseColours={true} title="Submits your email to the waitlist" />
+            </div>
+        </form>
     );
 }
-

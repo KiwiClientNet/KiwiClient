@@ -13,6 +13,7 @@ import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { respondIfCredentialsRejected } from "../utils/status.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -63,6 +64,9 @@ router.get("/mailboxes/:mailboxPath/messages/:uniqueId/parts/:partId", async (re
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to download message part" });
     }

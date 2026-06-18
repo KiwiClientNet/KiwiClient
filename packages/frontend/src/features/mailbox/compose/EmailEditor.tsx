@@ -2,11 +2,11 @@ import { TextStyleKit } from '@tiptap/extension-text-style'
 import { EditorContent, useEditor } from '@tiptap/react'
 import Link from '@tiptap/extension-link'
 import StarterKit from '@tiptap/starter-kit'
-import Emoji from '@tiptap/extension-emoji'
 import MenuBar from './MenuBar'
+import { forwardRef, useImperativeHandle } from 'react'
 
 // See https://tiptap.dev/docs/editor/extensions/marks/link for link information
-const extensions = [TextStyleKit, StarterKit, Emoji, Link.configure({
+const extensions = [TextStyleKit, StarterKit, Link.configure({
     openOnClick: false,
     autolink: true,
     defaultProtocol: 'https',
@@ -66,24 +66,40 @@ const extensions = [TextStyleKit, StarterKit, Emoji, Link.configure({
     },
 }),]
 
-export default function EmailEditor() {
+export interface EmailEditorHandle {
+    getHtml: () => string;
+    clearEditor: () => void;
+}
+
+// const INITIAL_MSG = `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`
+
+const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
     const editor = useEditor({
         extensions,
-        content: `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`,
+        // content: INITIAL_MSG,
         parseOptions: {
             preserveWhitespace: 'full',
-        },
-    })
+        }
+    });
+
+    useImperativeHandle(ref, () => ({
+        getHtml: () => editor?.getHTML() ?? '',
+        clearEditor: () => {
+            // editor.commands.setContent(INITIAL_MSG);
+            editor.commands.clearContent();
+        }
+    }), [editor]);
 
     return (
-        <div className="flex flex-1 flex-col gap-2 min-h-0">
+        <div className="flex flex-1 flex-col gap-2 min-h-0 overflow-y-clip">
+            <MenuBar editor={editor} />
             <EditorContent
                 editor={editor}
                 className={
                     'flex-1 min-h-40 rounded-md border border-kiwi-light-grey ' +
                     'bg-kiwi-white p-3 text-sm leading-relaxed text-kiwi-black ' +
                     'overflow-y-auto kiwi-scrollbar ' +
-                    'focus-within:border-kiwi-dark-grey ' +
+                    'focus-within:border-kiwi-green ' +
                     '[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full ' +
                     '[&_.ProseMirror_a]:text-kiwi-info ' +
                     '[&_.ProseMirror_a]:underline ' +
@@ -95,7 +111,9 @@ export default function EmailEditor() {
                     'hover:[&_.ProseMirror_a]:decoration-kiwi-info'
                 }
             />
-            <MenuBar editor={editor} />
         </div>
     )
-}
+
+})
+
+export default EmailEditor;

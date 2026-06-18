@@ -120,13 +120,9 @@ storage of data over the internet can be guaranteed to be entirely secure.
 
 ## 11. Beta access and email provider compatibility
 
-When KiwiClient enters beta testing, the way your email address is processed will depend on which mail provider you use:
+When KiwiClient enters beta testing, it will let you sign in to and access your existing email account. KiwiClient connects to your mailbox using the standard authentication your mail provider already offers — either the credentials for a self-hosted, private, or third-party IMAP/SMTP server, or the standard sign-in flow used by providers such as Gmail and Outlook. We use this access solely to let you read and send your own email through KiwiClient, and we do not sell, share, or transmit your mailbox contents to any third party.
 
-- **Self-hosted, private, or third-party IMAP/SMTP mail servers** — you connect KiwiClient to your own mail server using the credentials you already control. We never transmit your email address to any third party in order to enable this connection.
-
-- **Gmail accounts** — Google requires us to register an OAuth application in order for KiwiClient to access Gmail on your behalf. Whilst KiwiClient remains a non-commercial personal project, that OAuth application will remain in Google's "Testing" mode, which permits a maximum of 100 individually approved test users at any one time. If you sign up to the waitlist using a Gmail address, and at the point the beta opens we have not yet reached this cap, we shall add your Gmail address to Google's Test Users list so that you can sign in. This addition is made within the Google Cloud Console interface; the act of adding your address to the Test Users list transmits that address to Google as the operator of the OAuth platform. If we have reached the 100-user cap, we shall notify you and recommend either a self-hosted mail server or running your own self-hosted instance of KiwiClient (which is permitted by the AGPL licence and for which you would register your own Google OAuth application). We have no commercial relationship with Google in respect of this processing; Google's own privacy practices are governed by Google's privacy policy.
-
-- **Other major providers (Microsoft Outlook, Yahoo, etc.)** — support is planned for future releases. Where a provider requires us to register an OAuth application, the equivalent disclosure will be added to this policy before that integration goes live.
+KiwiClient is an independent project. We are not affiliated with, endorsed by, sponsored by, or otherwise associated with Google, Microsoft, or any other email provider, and all product names and trademarks remain the property of their respective owners. Where you sign in through such a provider, KiwiClient simply enables access to the account you already hold, and your use of that account remains governed by that provider's own terms and privacy policy.
 
 ## 12. Changes to this policy
 

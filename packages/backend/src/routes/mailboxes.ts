@@ -8,8 +8,8 @@ import type { MailboxesResponse } from "@KiwiClient/shared";
 import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
-import { ImapInstance } from "../imap/client.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { ClientStatus, respondIfCredentialsRejected } from "../utils/status.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -18,10 +18,11 @@ router.get("/mailboxes", async (_request: Request, response: Response<MailboxesR
     const tokenPayload = response.locals.user as TokenPayload;
 
     try {
+
         const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
         const imapInstance = await imapPool.acquire(loginBody);
 
-        if (imapInstance.getStatus() !== ImapInstance.Status.LOGGED_IN) {
+        if (imapInstance.getStatus() !== ClientStatus.LOGGED_IN) {
             response.status(401).json({ success: false, code: "AUTH_EXPIRED", message: "IMAP session expired" });
             return;
         }
@@ -29,15 +30,17 @@ router.get("/mailboxes", async (_request: Request, response: Response<MailboxesR
         const mailboxes = await imapInstance.getMailboxes();
 
         // Get the number of unread messages in each mailbox
-        for (const mailbox of mailboxes) {
-            mailbox.unseen = await imapInstance.getUnseenCount(mailbox.path);
-        }
+        const unseenResult = await imapInstance.getUnseenCount(mailboxes.map(mailbox => mailbox.path));
+        mailboxes.forEach(mailbox => mailbox.unseen = unseenResult[mailbox.path]);
+
 
         imapPool.release(loginBody);
-
         response.json({ success: true, data: mailboxes });
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to list mailboxes" });
     }

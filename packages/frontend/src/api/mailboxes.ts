@@ -14,10 +14,11 @@ type AuthFetch = (endpoint: string, options?: ApiFetchOptions) => Promise<Respon
  * error rather than a successful empty result.
  *
  * @param authFetch - The auth-aware fetch helper from AuthContext.
+ * @param signal - Abort signal from React Query; cancels superseded fetches.
  * @returns The flat list of mailboxes from the server.
  */
-export async function fetchMailboxes(authFetch: AuthFetch): Promise<Mailbox[]> {
-    const response = await authFetch("/api/mailboxes");
+export async function fetchMailboxes(authFetch: AuthFetch, signal?: AbortSignal): Promise<Mailbox[]> {
+    const response = await authFetch("/api/mailboxes", { signal });
     const body = (await response.json()) as MailboxesResponse;
 
     if (!body.success) {

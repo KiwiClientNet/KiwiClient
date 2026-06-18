@@ -21,9 +21,10 @@ const GMAIL_SCOPE = "email https://mail.google.com/";
 interface GoogleLoginProps {
     isDisabled: boolean;
     setIsDisabled: (disabled: boolean) => void;
+    onLoginFailed: (message: string) => void;
 }
 
-export function GoogleLogin({ isDisabled, setIsDisabled }: GoogleLoginProps) {
+export function GoogleLogin({ isDisabled, setIsDisabled, onLoginFailed }: GoogleLoginProps) {
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -38,17 +39,20 @@ export function GoogleLogin({ isDisabled, setIsDisabled }: GoogleLoginProps) {
                 const responseBody = (await response.json()) as AuthResponse;
 
                 if (!responseBody.success || !responseBody.accessToken) {
-                    console.error("Google login failed:", responseBody.message);
+                    onLoginFailed(responseBody.message ?? "Google login failed - please try again");
                     return;
                 }
-                login(responseBody.accessToken, responseBody.email ?? "");
+                login(responseBody.accessToken, responseBody.email ?? "", responseBody.name ?? "");
                 navigate("/mail");
+            } catch {
+                onLoginFailed("Google login failed - please try again");
             } finally {
                 setIsDisabled(false);
             }
         },
         onError: (errorResponse) => {
             console.error("Google OAuth error:", errorResponse);
+            onLoginFailed("Google sign-in was cancelled or blocked");
             setIsDisabled(false);
         },
         onNonOAuthError: () => {
@@ -63,7 +67,7 @@ export function GoogleLogin({ isDisabled, setIsDisabled }: GoogleLoginProps) {
 
     return (
         <Button
-            text="Login with Google"
+            text="Sign in with Google"
             disabled={isDisabled}
             onClickFunction={handleClick}
             inlineImageSource={gmailLogo}

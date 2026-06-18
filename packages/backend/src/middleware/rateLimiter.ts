@@ -25,6 +25,21 @@ export const loginRateLimiter = rateLimit({
 });
 
 /**
+ * @brief Five attempts per minute per IP for sending emails.
+ *
+ * Aggressive enough to discourage people from spamming the API however.
+ *
+ * TODO: Is it possible to have a queue of messages from the client that are sent to the API which have gone over the rate limit?
+ */
+export const sendRateLimiter = rateLimit({
+    windowMs: ONE_MINUTE_MS,
+    limit: 5,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { success: false, code: "SMTP_TOO_MANY_MESSAGES_SENT", message: "Too many messages already sent; please try again shortly" }
+});
+
+/**
  * @brief Higher ceiling for refresh because a single browsing session triggers many.
  *
  * Refresh tokens are httpOnly cookies and not user-typed, so brute force is
@@ -38,13 +53,10 @@ export const refreshRateLimiter = rateLimit({
     message: { success: false, code: "AUTH_EXPIRED", message: "Too many refresh requests" }
 });
 
-/**
- * @brief Standard limiter for requesting being added and removed from the waitlist
- */
 export const waitlistRateLimiter = rateLimit({
     windowMs: ONE_MINUTE_MS,
     limit: 5,
     standardHeaders: "draft-7",
     legacyHeaders: false,
     message: { success: false, code: "INVALID_REQUESTS", message: "Too many requests; try again shortly" }
-})
+});

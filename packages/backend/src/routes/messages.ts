@@ -16,12 +16,17 @@ import {
     GlancePageRequestSchema,
     MessageFlagsUpdateSchema,
     MessageMoveUpdateSchema,
-    MessageMoveUpdate
+    MessageMoveUpdate,
+    EmailToSend,
+    EmailToSendResponse,
+    EmailToSendSchema
 } from "@KiwiClient/shared";
 import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
-import { imapPool } from "../connection_pool.js";
+import { imapPool, smtpPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { respondIfCredentialsRejected } from "../utils/status.js";
+import { sendRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -73,6 +78,9 @@ router.get("/mailboxes/:mailboxPath/messages", async (request: Request, response
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to list messages" });
     }
@@ -114,6 +122,9 @@ router.get("/mailboxes/:mailboxPath/messages/bodies", async (request: Request, r
             imapPool.release(loginBody);
         }
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to fetch messages" });
     }
@@ -152,6 +163,9 @@ router.get("/mailboxes/:mailboxPath/messages/:uniqueId", async (request: Request
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to fetch message" });
     }
@@ -195,6 +209,9 @@ router.patch("/mailboxes/:mailboxPath/messages/flags/change", async (request: Re
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to update flags" });
     }
@@ -237,9 +254,67 @@ router.patch("/mailboxes/:mailboxPath/messages/move", async (request: Request<{ 
         }
 
     } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
         console.error(thrownError);
         response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to move messages" });
     }
+});
+
+router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, EmailToSend>, response: Response<EmptyResponse>) => {
+
+    // Get the email to send the request
+    const emailToSendParseResult = EmailToSendSchema.safeParse(request.body);
+
+    if (!emailToSendParseResult.success) {
+        response.status(400).json({
+            success: false,
+            code: "SMTP_MESSAGE_INVALID",
+            message: emailToSendParseResult.error.message
+        })
+        return;
+    }
+
+    const tokenPayload = response.locals.user as TokenPayload;
+
+    try {
+        const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
+        const imapInstance = await imapPool.acquire(loginBody);
+        const smtpInstance = await smtpPool.acquire(loginBody);
+
+        try {
+
+            const succeeded = await smtpInstance.sendEmail(emailToSendParseResult.data);
+
+            if (!succeeded) {
+                response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Server failed to send message" });
+                return;
+            }
+
+            // Can compile the message and add to the IMAP server so it appears in the sent folder
+            const messageMime = smtpInstance.compileEmail(emailToSendParseResult.data);
+            const addedToSent = await imapInstance.addRawMimeToMailbox(messageMime, "Sent", ["\\Seen"]);
+
+            if (!addedToSent) {
+                response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Server failed to add message to the sent folder" });
+                return;
+            }
+
+            response.json({ success: true, data: {} });
+        } finally {
+            smtpPool.release(loginBody);
+            imapPool.release(loginBody);
+        }
+
+    } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
+        console.error(thrownError);
+        response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to send message" });
+    }
+
 });
 
 export default router;

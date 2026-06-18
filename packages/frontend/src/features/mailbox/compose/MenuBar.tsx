@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
 import type { EditorStateSnapshot } from '@tiptap/react'
-import { useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from 'react';
 import {
     ArrowUturnDownIcon,
     ArrowUturnLeftIcon,
@@ -22,6 +22,28 @@ import {
 } from '@heroicons/react/24/outline';
 
 /**
+ * The block types the editor can switch between via the style picker.
+ * `paragraph` is normal body text; `h1`–`h6` are heading levels.
+ */
+const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+type HeadingLevel = (typeof HEADING_LEVELS)[number];
+type BlockType = 'paragraph' | `h${HeadingLevel}`;
+
+/**
+ * Collapse the editor's active block into a single value for the picker.
+ * Only one block type can be active at the caret, so we return the first
+ * heading match or fall back to paragraph.
+ */
+function activeBlockType(editor: Editor): BlockType {
+    for (const level of HEADING_LEVELS) {
+        if (editor.isActive('heading', { level })) {
+            return `h${level}`;
+        }
+    }
+    return 'paragraph';
+}
+
+/**
  * State selector for the MenuBar component.
  * Extracts the relevant editor state for rendering menu buttons.
  */
@@ -36,16 +58,9 @@ function menuBarStateSelector(ctx: EditorStateSnapshot<Editor>) {
         canStrike: ctx.editor.can().chain().toggleStrike().run() ?? false,
         isCode: ctx.editor.isActive('code') ?? false,
         canCode: ctx.editor.can().chain().toggleCode().run() ?? false,
-        canClearMarks: ctx.editor.can().chain().unsetAllMarks().run() ?? false,
 
-        // Block types
-        isParagraph: ctx.editor.isActive('paragraph') ?? false,
-        isHeading1: ctx.editor.isActive('heading', { level: 1 }) ?? false,
-        isHeading2: ctx.editor.isActive('heading', { level: 2 }) ?? false,
-        isHeading3: ctx.editor.isActive('heading', { level: 3 }) ?? false,
-        isHeading4: ctx.editor.isActive('heading', { level: 4 }) ?? false,
-        isHeading5: ctx.editor.isActive('heading', { level: 5 }) ?? false,
-        isHeading6: ctx.editor.isActive('heading', { level: 6 }) ?? false,
+        // Active block type, collapsed to one value for the style picker
+        blockType: activeBlockType(ctx.editor),
 
         // Lists and blocks
         isBulletList: ctx.editor.isActive('bulletList') ?? false,
@@ -57,6 +72,7 @@ function menuBarStateSelector(ctx: EditorStateSnapshot<Editor>) {
 
         // Font
         currentFontFamily: (ctx.editor.getAttributes('textStyle').fontFamily as string | undefined) ?? '',
+        currentFontSize: (ctx.editor.getAttributes('textStyle').fontSize as string | undefined) ?? '',
 
         // History
         canUndo: ctx.editor.can().chain().undo().run() ?? false,
@@ -72,7 +88,7 @@ function menuBarStateSelector(ctx: EditorStateSnapshot<Editor>) {
  * so something always renders.
  */
 const FONT_STACKS = [
-    { key: 'default', label: 'Default', stack: '' },
+    { key: 'default', label: 'Font', stack: '' },
     {
         key: 'sans',
         label: 'Sans',
@@ -102,6 +118,56 @@ const FONT_STACKS = [
 
 type FontKey = (typeof FONT_STACKS)[number]['key'];
 
+/**
+ * Labels for the block-style picker. `h4`–`h6` are kept distinct rather
+ * than collapsed: the editor stylesheet renders each at its own size so
+ * every level produces visibly different output.
+ */
+const BLOCK_OPTIONS: ReadonlyArray<{ key: BlockType; label: string }> = [
+    { key: 'paragraph', label: 'Normal text' },
+    { key: 'h1', label: 'Heading 1' },
+    { key: 'h2', label: 'Heading 2' },
+    { key: 'h3', label: 'Heading 3' },
+    { key: 'h4', label: 'Heading 4' },
+    { key: 'h5', label: 'Heading 5' },
+    { key: 'h6', label: 'Label heading' },
+];
+
+interface BlockTypePickerProps {
+    value: BlockType;
+    onChange: (next: BlockType) => void;
+}
+
+/**
+ * Single control for the active block type. Replaces a row of seven
+ * heading/paragraph buttons — the same idiom as the style menu in Gmail,
+ * Google Docs, and Notion. A native `<select>` keeps it keyboard- and
+ * screen-reader-friendly for free.
+ */
+function BlockTypePicker({ value, onChange }: BlockTypePickerProps) {
+    return (
+        <select
+            value={value}
+            onChange={event => onChange(event.target.value as BlockType)}
+            title="Text style"
+            aria-label="Text style"
+            className={
+                'h-9 min-w-28 cursor-pointer rounded-md border border-transparent bg-transparent px-2 ' +
+                'text-xs font-medium text-kiwi-dark-black ' +
+                'transition-colors duration-150 ' +
+                'hover:bg-kiwi-light-grey/50 ' +
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60'
+            }
+        >
+            {BLOCK_OPTIONS.map(option => (
+                <option key={option.key} value={option.key}>
+                    {option.label}
+                </option>
+            ))}
+        </select>
+    );
+}
+
 interface FontPickerProps {
     value: string;
     onChange: (stack: string) => void;
@@ -121,11 +187,11 @@ function FontPicker({ value, onChange }: FontPickerProps) {
             title="Font family"
             aria-label="Font family"
             className={
-                'h-8 rounded-md border border-kiwi-light-grey bg-kiwi-white px-2 ' +
+                'h-9 cursor-pointer rounded-md border border-transparent bg-transparent px-2 ' +
                 'text-xs font-medium text-kiwi-dark-black ' +
                 'transition-colors duration-150 ' +
-                'hover:bg-kiwi-light-grey/40 ' +
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60'
+                'hover:bg-kiwi-light-grey/50 ' +
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60'
             }
             style={{ fontFamily: value || undefined }}
         >
@@ -143,40 +209,90 @@ function FontPicker({ value, onChange }: FontPickerProps) {
 }
 
 /**
- * Curated common emojis. Each `shortcode` must exist in the default
- * `@tiptap/extension-emoji` data set — `setEmoji(shortcode)` no-ops on
- * unknown shortcodes. Body input rules (typing `:smile:`) also work
- * without this picker; this is just for quick discovery.
+ * Point sizes for the size picker. An empty value clears the inline size and
+ * lets the text fall back to the editor's base size. Values are `px` strings
+ * because that is what the FontSize mark stores and what renders reliably in
+ * email clients (relative units like `em` compound unpredictably there).
  */
-const QUICK_EMOJIS: ReadonlyArray<{ shortcode: string; glyph: string; label: string }> = [
-    { shortcode: 'smile', glyph: '😄', label: 'Smile' },
-    { shortcode: 'grin', glyph: '😁', label: 'Grin' },
-    { shortcode: 'joy', glyph: '😂', label: 'Joy' },
-    { shortcode: 'wink', glyph: '😉', label: 'Wink' },
-    { shortcode: 'blush', glyph: '😊', label: 'Blush' },
-    { shortcode: 'heart_eyes', glyph: '😍', label: 'Heart eyes' },
-    { shortcode: 'thinking', glyph: '🤔', label: 'Thinking' },
-    { shortcode: 'sob', glyph: '😭', label: 'Sob' },
-    { shortcode: 'heart', glyph: '❤️', label: 'Heart' },
-    { shortcode: 'fire', glyph: '🔥', label: 'Fire' },
-    { shortcode: 'sparkles', glyph: '✨', label: 'Sparkles' },
-    { shortcode: 'tada', glyph: '🎉', label: 'Tada' },
-    { shortcode: 'rocket', glyph: '🚀', label: 'Rocket' },
-    { shortcode: 'eyes', glyph: '👀', label: 'Eyes' },
-    { shortcode: '+1', glyph: '👍', label: 'Thumbs up' },
-    { shortcode: '-1', glyph: '👎', label: 'Thumbs down' },
-    { shortcode: 'pray', glyph: '🙏', label: 'Pray' },
-    { shortcode: 'clap', glyph: '👏', label: 'Clap' },
-    { shortcode: 'ok_hand', glyph: '👌', label: 'OK hand' },
-    { shortcode: 'wave', glyph: '👋', label: 'Wave' },
-    { shortcode: 'muscle', glyph: '💪', label: 'Muscle' },
-    { shortcode: 'brain', glyph: '🧠', label: 'Brain' },
-    { shortcode: 'check', glyph: '✅', label: 'Check' },
-    { shortcode: 'x', glyph: '❌', label: 'Cross' },
+const FONT_SIZES: ReadonlyArray<{ label: string; value: string }> = [
+    { label: 'Size', value: '' },
+    { label: '12', value: '12px' },
+    { label: '14', value: '14px' },
+    { label: '16', value: '16px' },
+    { label: '18', value: '18px' },
+    { label: '24', value: '24px' },
+    { label: '32', value: '32px' },
 ];
 
+interface FontSizePickerProps {
+    value: string;
+    onChange: (size: string) => void;
+}
+
+function FontSizePicker({ value, onChange }: FontSizePickerProps) {
+    const current = FONT_SIZES.find(size => size.value === value)?.value ?? '';
+
+    return (
+        <select
+            value={current}
+            onChange={event => onChange(event.target.value)}
+            title="Font size"
+            aria-label="Font size"
+            className={
+                'h-9 min-w-16 cursor-pointer rounded-md border border-transparent bg-transparent px-2 ' +
+                'text-xs font-medium text-kiwi-dark-black ' +
+                'transition-colors duration-150 ' +
+                'hover:bg-kiwi-light-grey/50 ' +
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60'
+            }
+        >
+            {FONT_SIZES.map(size => (
+                <option key={size.value} value={size.value}>
+                    {size.label}
+                </option>
+            ))}
+        </select>
+    );
+}
+
+/**
+ * Shape of the object emoji-mart returns on selection. The library ships no
+ * type declarations, so we declare only the field we use: the native unicode
+ * glyph, which we insert directly so it renders in any email client.
+ */
+interface EmojiMartSelection {
+    native: string;
+}
+
+interface EmojiMartPickerProps {
+    onEmojiSelect: (emoji: EmojiMartSelection) => void;
+    theme?: 'light' | 'dark' | 'auto';
+    perLine?: number;
+    previewPosition?: 'none' | 'top' | 'bottom';
+    skinTonePosition?: 'none' | 'preview' | 'search';
+    navPosition?: 'top' | 'bottom' | 'none';
+}
+
+/**
+ * emoji-mart's picker and its emoji dataset are heavy, and most messages are
+ * sent without ever opening it. `lazy` + dynamic `import()` pull the picker
+ * and its data into a separate chunk the bundler only fetches the first time
+ * the picker mounts — keeping them out of the initial composer bundle.
+ */
+const LazyEmojiPicker = lazy(async () => {
+    const [pickerModule, dataModule] = await Promise.all([
+        import('@emoji-mart/react'),
+        import('@emoji-mart/data'),
+    ]);
+    const Picker = pickerModule.default as ComponentType<EmojiMartPickerProps & { data: unknown }>;
+    const data = dataModule.default;
+    return {
+        default: (props: EmojiMartPickerProps) => <Picker data={data} {...props} />,
+    };
+});
+
 interface EmojiPickerProps {
-    onPick: (shortcode: string) => void;
+    onPick: (native: string) => void;
 }
 
 function EmojiPicker({ onPick }: EmojiPickerProps) {
@@ -218,34 +334,21 @@ function EmojiPicker({ onPick }: EmojiPickerProps) {
                 <div
                     role="dialog"
                     aria-label="Emoji picker"
-                    className={
-                        'absolute left-0 bottom-full z-20 mb-1.5 w-72 ' +
-                        'grid grid-cols-6 gap-1.5 ' +
-                        'rounded-lg border border-kiwi-light-grey bg-kiwi-white p-2.5 ' +
-                        'shadow-lg'
-                    }
+                    className="absolute left-0 top-full z-20 mt-1.5"
                 >
-                    {QUICK_EMOJIS.map(item => (
-                        <button
-                            key={item.shortcode}
-                            type="button"
-                            onClick={() => {
-                                onPick(item.shortcode);
+                    <Suspense fallback={null}>
+                        <LazyEmojiPicker
+                            theme="light"
+                            perLine={8}
+                            previewPosition="none"
+                            skinTonePosition="search"
+                            navPosition="top"
+                            onEmojiSelect={emoji => {
+                                onPick(emoji.native);
                                 setOpen(false);
                             }}
-                            title={item.label}
-                            aria-label={item.label}
-                            className={
-                                'flex size-9 items-center justify-center rounded-md ' +
-                                'text-xl leading-none ' +
-                                'transition-colors duration-100 ' +
-                                'hover:bg-kiwi-light-grey/60 ' +
-                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60'
-                            }
-                        >
-                            {item.glyph}
-                        </button>
-                    ))}
+                        />
+                    </Suspense>
                 </div>
             ) : null}
         </div>
@@ -268,13 +371,13 @@ interface ToolButtonProps {
 }
 
 const toolButtonBase =
-    'flex items-center justify-center h-8 min-w-8 px-1.5 rounded-md text-kiwi-dark-black ' +
+    'flex items-center justify-center h-9 min-w-9 px-2 rounded-md text-kiwi-dark-grey ' +
     'transition-colors duration-150 ' +
-    'hover:bg-kiwi-light-grey/70 ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60 ' +
-    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent';
+    'hover:bg-kiwi-light-grey/50 hover:text-kiwi-black ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60 ' +
+    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-kiwi-dark-grey';
 
-const toolButtonActive = 'bg-kiwi-middle-grey/60 text-kiwi-black';
+const toolButtonActive = 'bg-kiwi-green/20 text-kiwi-black';
 
 function ToolButton({ onClick, label, isActive, disabled, icon: Icon, children }: ToolButtonProps) {
     return (
@@ -294,11 +397,11 @@ function ToolButton({ onClick, label, isActive, disabled, icon: Icon, children }
 }
 
 function ToolGroup({ children }: { children: ReactNode }) {
-    return <div className="flex items-center gap-0.5">{children}</div>;
+    return <div className="flex items-center">{children}</div>;
 }
 
 function ToolDivider() {
-    return <div aria-hidden="true" className="mx-1 h-5 w-px self-center bg-kiwi-middle-grey/40" />;
+    return <div aria-hidden="true" className="mx-1 h-6 w-px self-center bg-kiwi-light-grey" />;
 }
 
 export default function MenuBar({ editor }: MenuBarProps) {
@@ -341,13 +444,24 @@ export default function MenuBar({ editor }: MenuBarProps) {
             role="toolbar"
             aria-label="Email formatting toolbar"
             className={
-                'flex flex-wrap items-center gap-x-0.5 gap-y-1 ' +
-                'rounded-md border border-kiwi-light-grey bg-kiwi-light-grey/30 ' +
-                'p-1.5'
+                'flex flex-wrap items-center gap-y-1 ' +
+                'rounded-lg border border-kiwi-light-grey bg-kiwi-white ' +
+                'px-1.5 py-1 shadow-sm'
             }
         >
 
             <ToolGroup>
+                <BlockTypePicker
+                    value={editorState.blockType}
+                    onChange={next => {
+                        if (next === 'paragraph') {
+                            editor.chain().focus().setParagraph().run();
+                            return;
+                        }
+                        const level = Number(next.slice(1)) as HeadingLevel;
+                        editor.chain().focus().setHeading({ level }).run();
+                    }}
+                />
                 <FontPicker
                     value={editorState.currentFontFamily}
                     onChange={stack => {
@@ -358,9 +472,14 @@ export default function MenuBar({ editor }: MenuBarProps) {
                         }
                     }}
                 />
-                <EmojiPicker
-                    onPick={shortcode => {
-                        editor.chain().focus().setEmoji(shortcode).run();
+                <FontSizePicker
+                    value={editorState.currentFontSize}
+                    onChange={size => {
+                        if (size) {
+                            editor.chain().focus().setFontSize(size).run();
+                        } else {
+                            editor.chain().focus().unsetFontSize().run();
+                        }
                     }}
                 />
             </ToolGroup>
@@ -396,71 +515,6 @@ export default function MenuBar({ editor }: MenuBarProps) {
                     disabled={!editorState.canCode}
                     isActive={editorState.isCode}
                 />
-                <ToolButton
-                    label="Clear formatting"
-                    icon={BackspaceIcon}
-                    onClick={() => editor.chain().focus().unsetAllMarks().run()}
-                />
-                <ToolButton
-                    label="Reset block to paragraph"
-                    onClick={() => editor.chain().focus().clearNodes().run()}
-                >
-                    ¶✕
-                </ToolButton>
-            </ToolGroup>
-
-            <ToolDivider />
-
-            <ToolGroup>
-                <ToolButton
-                    label="Paragraph"
-                    onClick={() => editor.chain().focus().setParagraph().run()}
-                    isActive={editorState.isParagraph}
-                >
-                    ¶
-                </ToolButton>
-                <ToolButton
-                    label="Heading 1"
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                    isActive={editorState.isHeading1}
-                >
-                    H1
-                </ToolButton>
-                <ToolButton
-                    label="Heading 2"
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                    isActive={editorState.isHeading2}
-                >
-                    H2
-                </ToolButton>
-                <ToolButton
-                    label="Heading 3"
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                    isActive={editorState.isHeading3}
-                >
-                    H3
-                </ToolButton>
-                <ToolButton
-                    label="Heading 4"
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-                    isActive={editorState.isHeading4}
-                >
-                    H4
-                </ToolButton>
-                <ToolButton
-                    label="Heading 5"
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
-                    isActive={editorState.isHeading5}
-                >
-                    H5
-                </ToolButton>
-                <ToolButton
-                    label="Heading 6"
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
-                    isActive={editorState.isHeading6}
-                >
-                    H6
-                </ToolButton>
             </ToolGroup>
 
             <ToolDivider />
@@ -479,26 +533,16 @@ export default function MenuBar({ editor }: MenuBarProps) {
                     isActive={editorState.isOrderedList}
                 />
                 <ToolButton
-                    label="Code block"
-                    icon={CodeBracketSquareIcon}
-                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                    isActive={editorState.isCodeBlock}
-                />
-                <ToolButton
                     label="Blockquote"
                     icon={ChatBubbleBottomCenterTextIcon}
                     onClick={() => editor.chain().focus().toggleBlockquote().run()}
                     isActive={editorState.isBlockquote}
                 />
                 <ToolButton
-                    label="Horizontal rule"
-                    icon={MinusIcon}
-                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                />
-                <ToolButton
-                    label="Hard break"
-                    icon={ArrowUturnDownIcon}
-                    onClick={() => editor.chain().focus().setHardBreak().run()}
+                    label="Code block"
+                    icon={CodeBracketSquareIcon}
+                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                    isActive={editorState.isCodeBlock}
                 />
             </ToolGroup>
 
@@ -506,7 +550,7 @@ export default function MenuBar({ editor }: MenuBarProps) {
 
             <ToolGroup>
                 <ToolButton
-                    label="Set link"
+                    label="Insert link"
                     icon={LinkIcon}
                     onClick={setLink}
                     isActive={editorState.isLink}
@@ -517,6 +561,37 @@ export default function MenuBar({ editor }: MenuBarProps) {
                     onClick={() => editor.chain().focus().unsetLink().run()}
                     disabled={!editorState.isLink}
                 />
+                <ToolButton
+                    label="Insert horizontal rule"
+                    icon={MinusIcon}
+                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                />
+                <ToolButton
+                    label="Insert line break"
+                    icon={ArrowUturnDownIcon}
+                    onClick={() => editor.chain().focus().setHardBreak().run()}
+                />
+                <EmojiPicker
+                    onPick={native => {
+                        editor.chain().focus().insertContent(native).run();
+                    }}
+                />
+            </ToolGroup>
+
+            <ToolDivider />
+
+            <ToolGroup>
+                <ToolButton
+                    label="Clear inline formatting"
+                    icon={BackspaceIcon}
+                    onClick={() => editor.chain().focus().unsetAllMarks().run()}
+                />
+                <ToolButton
+                    label="Reset to normal text"
+                    onClick={() => editor.chain().focus().clearNodes().run()}
+                >
+                    ¶✕
+                </ToolButton>
             </ToolGroup>
 
             <ToolDivider />

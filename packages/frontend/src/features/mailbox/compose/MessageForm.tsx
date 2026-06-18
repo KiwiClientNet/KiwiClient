@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useComposeEmailStore } from '../../../store/composeEmailStore';
+import type { EmailAddress } from '@KiwiClient/shared';
 
 /**
  * Permissive but not RFC-5322 strict. Catches typos like missing `@` or TLD,
@@ -91,12 +92,12 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
             <label htmlFor={id} className="mt-1 w-16 shrink-0 text-sm font-semibold uppercase tracking-wide text-kiwi-dark-grey" >
                 {label}
             </label>
-            <div className="flex flex-1 flex-wrap items-center gap-1.5">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                 {value.map(chip => (
                     <span
                         key={chip.id}
                         className={
-                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-sm ' +
+                            'inline-flex min-w-0 max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-sm ' +
                             (chip.valid
                                 ? 'bg-kiwi-light-grey/60 text-kiwi-black'
                                 : 'bg-kiwi-failure/10 text-kiwi-failure ring-1 ring-kiwi-failure/50')
@@ -108,7 +109,7 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
                             type="button"
                             onClick={() => removeChip(chip.id)}
                             aria-label={`Remove ${chip.address}`}
-                            className="rounded-full p-0.5 hover:bg-kiwi-middle-grey/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-info/60"
+                            className="rounded-full p-0.5 hover:bg-kiwi-middle-grey/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-green/60"
                         >
                             <XMarkIcon className="size-3" aria-hidden="true" />
                         </button>
@@ -129,7 +130,7 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
                     data-1p-ignore
                     data-lpignore="true"
                     data-bwignore
-                    className="min-w-36 flex-1 bg-transparent text-sm leading-6 outline-none placeholder:text-kiwi-middle-grey"
+                    className="min-w-24 flex-1 bg-transparent text-sm leading-6 outline-none placeholder:text-kiwi-middle-grey"
                     placeholder={value.length === 0 ? 'name@example.com' : ''}
                 />
             </div>
@@ -138,22 +139,66 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
     );
 }
 
-export default function MessageForm() {
+interface MessageFormValues {
+    to: EmailAddress[];
+    cc: EmailAddress[];
+    bcc: EmailAddress[];
+    subject: string;
+}
+
+export interface MessageFormHandle {
+    getDraft: () => MessageFormValues;
+    clearDraft: () => void;
+}
+
+interface MessageFormProps {
+    setComposeBoxTitle: (newSubject: string) => void;
+}
+
+const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setComposeBoxTitle }, ref) => {
     const [to, setTo] = useState<Recipient[]>([]);
     const [cc, setCc] = useState<Recipient[]>([]);
     const [bcc, setBcc] = useState<Recipient[]>([]);
     const [showCc, setShowCc] = useState(false);
     const [showBcc, setShowBcc] = useState(false);
     const [subject, setSubject] = useState('');
-
     const hidden = useComposeEmailStore(state => state.hidden);
     const toInputRef = useRef<HTMLInputElement>(null);
+
+    function handleSubjectInput(event: React.ChangeEvent<HTMLInputElement>): void {
+        event.preventDefault();
+        if (event.target.value.length === 0) {
+            setComposeBoxTitle("New message");
+            setSubject("");
+            return;
+        }
+
+        setSubject(event.target.value);
+        setComposeBoxTitle(event.target.value);
+    }
 
     useEffect(() => {
         if (!hidden) {
             toInputRef.current?.focus();
         }
     }, [hidden]);
+
+    useImperativeHandle(ref, () => ({
+        getDraft: () => ({
+            to: to.filter(chip => chip.valid).map(chip => ({ address: chip.address })),
+            cc: cc.filter(chip => chip.valid).map(chip => ({ address: chip.address })),
+            bcc: bcc.filter(chip => chip.valid).map(chip => ({ address: chip.address })),
+            subject: subject
+        }),
+
+        clearDraft: () => {
+            setTo([]);
+            setCc([]);
+            setBcc([]);
+            setSubject('')
+        },
+
+    }), [to, cc, bcc, subject])
 
     return (
         <form
@@ -205,7 +250,7 @@ export default function MessageForm() {
                     name="subject"
                     type="text"
                     value={subject}
-                    onChange={event => setSubject(event.target.value)}
+                    onChange={event => handleSubjectInput(event)}
                     autoComplete="off"
                     data-form-type="other"
                     data-1p-ignore
@@ -217,4 +262,6 @@ export default function MessageForm() {
             </div>
         </form>
     );
-}
+})
+
+export default MessageForm;

@@ -10,6 +10,7 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import "dotenv/config";
+import type { AdvancedEmailServerConfig } from "@KiwiClient/shared";
 
 /**
  * @brief Reads a required environment variable, throwing when absent.
@@ -29,15 +30,19 @@ export function getEnv(name: string): string {
     return value;
 };
 
+export const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+
 const JWT_SECRET = getEnv("JWT_SECRET");
 const JWT_REFRESH_SECRET = getEnv("JWT_REFRESH_SECRET");
 const ENCRYPT_KEY = Buffer.from(getEnv("ENCRYPT_KEY"), "hex");
 
 export interface TokenPayload {
+    name: string;
     email: string;
     encryptedPassword: string;
     oAuth2RefreshToken?: string;
     serverType: "GMAIL" | "PRIVATE";
+    advancedConfig?: AdvancedEmailServerConfig;
 }
 
 /**

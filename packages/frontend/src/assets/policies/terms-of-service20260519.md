@@ -47,13 +47,9 @@ without notice, and may be modified, suspended, or discontinued at any time. We
 provide no uptime guarantee, service level agreement, or commitment of
 continued availability in respect of any beta or production release.
 
-Access to the Service at beta will depend on the mail provider associated with the email address you have used to join the waitlist:
+At beta, the Service lets you sign in to and use your existing email account. You connect either with the credentials of a self-hosted, private, or third-party IMAP/SMTP mail server, or through the standard sign-in flow offered by providers such as Gmail and Outlook. The Service uses this access only to let you read and send your own email.
 
-- If you use a **self-hosted, private, or third-party IMAP/SMTP mail server** (whether your own server, a small mail host, or any other provider that supports standard IMAP and SMTP credentials), the Service will work for you without any dependency on a third-party identity provider.
-- If you use a **Gmail address**, access depends on Google's Restricted-scope OAuth verification regime. Whilst KiwiClient remains a non-commercial personal project, our Google OAuth application will operate in Google's "Testing" mode, which permits no more than 100 approved test users at any one time. We shall add waitlist signups using Gmail addresses to Google's Test Users list on a first-come, first-served basis until that cap is reached. If we reach the cap before we are able to admit you, we shall offer you the option to use a self-hosted mail server, or to run your own self-hosted instance of KiwiClient under the AGPL with your own Google OAuth application registered to your own Google account.
-- Support for **other major providers**, including Microsoft Outlook, is planned for future releases. The specific access arrangements applicable to each such provider will be set out in this document and in the Privacy Policy before that integration is made available.
-
-We do not guarantee that any particular email provider will be supported, and we may add, modify, or remove provider integrations at our reasonable discretion.
+KiwiClient is an independent project and is not affiliated with, endorsed by, sponsored by, or otherwise associated with Google, Microsoft, or any other email provider; all such product names and trademarks remain the property of their respective owners. Where you sign in through a third-party provider, the Service simply enables access to the account you already hold, and your use of that account remains subject to that provider's own terms. We do not guarantee that any particular email provider will be supported, and we may add, modify, or remove provider integrations at our reasonable discretion.
 
 ## 6. Acceptable use
 

@@ -1,24 +1,87 @@
-import { ArrowsPointingInIcon, ArrowsPointingOutIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { ArrowPathIcon, ArrowsPointingInIcon, ArrowsPointingOutIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { PaperAirplaneIcon, PaperClipIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState, type FormEvent } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
-import EmailEditor from "./EmailEditor";
-import MessageForm from "./MessageForm";
+import EmailEditor, { type EmailEditorHandle } from "./EmailEditor";
+import MessageForm, { type MessageFormHandle } from "./MessageForm";
 import { Button } from "../../../components/Button";
 import { type EmailToSend } from "@KiwiClient/shared";
+import { AuthContext } from "../../../auth/AuthContext";
+import { useToastStore } from "../../../store/toastStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { glanceQueryKey } from "../glance/queryKeys";
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
     const [minimized, setMinimized] = useState<boolean>(false);
     const hidden = useComposeEmailStore(state => state.hidden);
     const setHidden = useComposeEmailStore(state => state.setHidden);
-    const [emailToSend, setEmailToSend] = useState<EmailToSend>();
+    const editorRef = useRef<EmailEditorHandle>(null);
+    const formRef = useRef<MessageFormHandle>(null);
+    const { authFetch, email, name } = useContext(AuthContext);
+    const queryClient = useQueryClient();
+    const setMessage = useToastStore((state) => state.setMessage);
+    const [composeBoxTitle, setComposeBoxTitle] = useState("New message");
+    // const [editing, setEditing] = useState(false);
 
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
+    // useEffect(() => {
+    //     // Draft functionality?
+    //
+    // }, [editing]);
+
+    function handleClosingComposeBox(event: React.MouseEvent<SVGSVGElement, MouseEvent>): void {
+        event.stopPropagation();
+        setHidden(true);
+        setMinimized(false);
+        setFullScreen(false);
+        setComposeBoxTitle("New message");
+        formRef.current?.clearDraft();
+        editorRef.current?.clearEditor();
+    }
+
+    async function handleSend(): Promise<boolean> {
+        // TODO: Handle the UI when the user forgets to add stuff like a recipient, subject
+        const draft = formRef.current?.getDraft();
+
+        if (!draft) {
+            return false;
+        }
+
+        const emailToSend: EmailToSend = {
+            from: { name: name, address: email },
+            ...draft,
+            replyTo: [{ name: name, address: email }],
+            html: editorRef.current?.getHtml() ?? '',
+        };
+
+        setMessage(`Sending message '${draft.subject}'...`, "loading");
 
         // Backend call to send here
-        console.log(emailToSend);
+        const response = await authFetch('/api/messages/send', {
+            method: 'POST',
+            body: emailToSend
+        })
+
+        if (response.ok) {
+            setHidden(true);
+            setMinimized(false);
+            setFullScreen(false);
+            setComposeBoxTitle("New message");
+
+            // Clear the content of the email after it's been sent
+            formRef.current?.clearDraft();
+            editorRef.current?.clearEditor();
+
+            // TODO: Also make it obvious to the user that the mail is sending
+            // TODO: Handle what happens when the emails get rejected
+            setMessage("Message sent!", "success", 3000);
+            // TODO: Error handling if the message was sent but isn't moved to the sent folder
+            // TODO: Change the "Sent" folder to the actual one (like how trash works)
+            queryClient.invalidateQueries({ queryKey: glanceQueryKey("Sent") });
+            return true;
+        }
+
+        return false;
     }
 
     useEffect(() => {
@@ -32,7 +95,7 @@ export default function ComposeBox() {
                 "fixed inset-0 z-50 flex-col h-dvh w-full overflow-auto",
                 "md:inset-auto md:bottom-0 md:right-4 md:overflow-hidden",
                 "bg-kiwi-white text-kiwi-black shadow-2xl border border-kiwi-middle-grey",
-                "md:rounded-t-lg transition-all duration-300 ease-out",
+                "md:rounded-t-2xl transition-all duration-300 ease-out",
                 // desktop size state
                 fullScreen ? "md:inset-2 md:bottom-2 md:right-2 md:h-[calc(100dvh-1rem)] md:w-[calc(100vw-1rem)] md:left-2" : minimized ? "md:h-11 md:w-160" : "md:h-160 md:w-160", "md:max-h-full md:max-w-full",].join(" ")}
         >
@@ -40,7 +103,7 @@ export default function ComposeBox() {
                 className="flex h-11 shrink-0 items-center justify-between bg-kiwi-light-grey px-3 cursor-pointer"
                 onClick={() => minimized && setMinimized(false)}
             >
-                <span className="truncate text-sm font-semibold">New message</span>
+                <span className="truncate text-sm font-semibold">{composeBoxTitle}</span>
                 <div className="flex items-center gap-4">
                     <MinusIcon
                         className="size-5 cursor-pointer hidden md:block hover:bg-kiwi-white duration-100 transition-colors rounded-sm"
@@ -60,44 +123,83 @@ export default function ComposeBox() {
                     )}
                     <XMarkIcon
                         className="size-5 cursor-pointer hover:bg-kiwi-white duration-100 transition-colors rounded-sm"
-                        onClick={(event) => { event.stopPropagation(); setHidden(!hidden); }}
+                        onClick={event => handleClosingComposeBox(event)}
                     />
                 </div>
             </header>
-            <MessageForm />
+            <MessageForm setComposeBoxTitle={setComposeBoxTitle} ref={formRef} />
             <div className={minimized ? "invisible" : "flex flex-1 flex-col overflow-y-auto p-4"}>
-                <EmailEditor />
+                <EmailEditor ref={editorRef} />
             </div>
-            {!minimized && <Footer />}
+            {!minimized && <Footer sendEmail={handleSend} />}
         </section>
     );
 }
 
+interface FooterProps {
+    sendEmail: () => Promise<boolean>
+}
 
-function Footer() {
+type SendingStatus = 'drafting' | 'sending' | 'succeeded' | 'failed';
+
+function Footer({ sendEmail }: FooterProps) {
+
+    const [sendingStatus, setSendingStatus] = useState<SendingStatus>('drafting');
+
+    async function handleSend(event: React.MouseEvent<HTMLButtonElement>) {
+        event.preventDefault();
+        setSendingStatus('sending');
+        const sent = await sendEmail();
+
+        if (sent) {
+            // setSendingStatus('succeeded');
+            setSendingStatus('drafting'); // Return back to the default behaviour
+        }
+
+        setSendingStatus('failed');
+    }
+
+
     return (
         <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-kiwi-light-grey bg-kiwi-light-grey/20 px-3 py-2">
             <div className="flex items-center gap-2">
                 <Button
                     text="Send"
                     buttonSize="md"
-                    icon={<PaperAirplaneIcon className="size-4 -rotate-45" aria-hidden="true" />}
+                    reverseColours
+                    icon={getStatusIcon(sendingStatus)}
+                    disabled={sendingStatus === 'sending'}
+                    onClick={(event) => handleSend(event)}
                 />
                 <Button
                     text=""
                     buttonSize="sm"
                     title="Attach file"
-                    reverseColours
                     icon={<PaperClipIcon className="size-5" aria-hidden="true" />}
+                    onClick={() => alert("Attachments coming soon!")}
                 />
             </div>
             <Button
                 text=""
                 buttonSize="sm"
                 title="Discard draft"
-                reverseColours
                 icon={<TrashIcon className="size-5" aria-hidden="true" />}
+                onClick={() => alert("Drafts coming soon!")}
             />
         </footer>
     );
+}
+
+function getStatusIcon(status: SendingStatus) {
+    switch (status) {
+        case 'drafting':
+            return (<PaperAirplaneIcon aria-hidden="true" className="size-4 -rotate-45" />);
+        default:
+        case 'sending':
+            return (<ArrowPathIcon aria-hidden="true" className="size-4 animate-spin" />);
+
+
+        // TODO: Case failed and succeeded
+
+    }
 }

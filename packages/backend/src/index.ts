@@ -43,7 +43,7 @@ app.use(cors({
 }));
 
 // Per-route rate limiters live in middleware/rateLimiter.ts and are mounted on
-// the abuse-prone unauthenticated endpoints (login, refresh, waitlist).
+// the abuse-prone unauthenticated endpoints (login, refresh).
 // Authenticated routes sit behind requireAuth, so a flooded request implies a
 // compromised session rather than anonymous abuse and is a different threat model.
 

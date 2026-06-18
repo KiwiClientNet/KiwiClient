@@ -19,9 +19,11 @@ interface GlanceListProps {
     onFetchNextPage: () => void;
     selectedUniqueIds: Set<number>;
     onToggleSelection: (uniqueId: number) => void;
+    specialTrashFolderPath?: string;
+    onEmailsRemoved?: (removedUniqueIds: Set<number>) => void;
 }
 
-export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFetchNextPage, selectedUniqueIds, onToggleSelection }: GlanceListProps) {
+export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFetchNextPage, selectedUniqueIds, onToggleSelection, specialTrashFolderPath = undefined, onEmailsRemoved = undefined }: GlanceListProps) {
     const triggerIndex = Math.max(0, emailGlances.length - REMAINING_ITEMS_BEFORE_FETCH);
 
     const handleFetchTriggered = () => {
@@ -30,8 +32,6 @@ export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFe
         }
         onFetchNextPage();
     };
-
-    // TODO: If no emails, return something to say that!
 
     return (
         <div className="flex flex-col no-scrollbar overflow-y-scroll h-full max-w-full flex-1 pr-1 min-h-0 shrink-0">
@@ -43,6 +43,8 @@ export function GlanceList({ emailGlances, isFetchingNextPage, hasNextPage, onFe
                     onToggleCheck={() => onToggleSelection(emailGlance.uniqueId)}
                     isFetchTrigger={index === triggerIndex}
                     onFetchTriggered={handleFetchTriggered}
+                    specialTrashFolderPath={specialTrashFolderPath}
+                    onEmailsRemoved={onEmailsRemoved}
                 />
             ))}
             {isFetchingNextPage && (

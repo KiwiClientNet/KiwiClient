@@ -37,11 +37,15 @@ export const EmailFlagsSchema = z.object({
  *
  * Excludes the message body so that paged listings remain small over the wire.
  * The full body is fetched separately via the single-message endpoint.
+ *
+ * firstRecipient carries only the first To address (not the full list) so
+ * sent-folder listings can lead with the recipient without bloating the page.
  */
 export const EmailGlanceSchema = z.object({
     uniqueId: z.number(),
     mailboxPath: z.string(),
     from: EmailAddressSchema,
+    firstRecipient: EmailAddressSchema.optional(),
     subject: z.string(),
     dateIso: z.string(),
     flags: EmailFlagsSchema,
@@ -81,12 +85,17 @@ export const MailboxSchema = z.object({
 });
 
 /** @brief Schema for sending a an email message
- *
- * Extends the email message schema and adds who the email is from
  * */
-export const EmailToSendSchema = EmailMessageSchema.extend({
-    from: z.array(EmailAddressSchema)
-})
+export const EmailToSendSchema = z.object({
+    from: EmailAddressSchema,
+    to: z.array(EmailAddressSchema),
+    cc: z.array(EmailAddressSchema),
+    bcc: z.array(EmailAddressSchema),
+    replyTo: z.array(EmailAddressSchema),
+    subject: z.string(),
+    html: z.string().optional(),
+    text: z.string().optional(),
+});
 
 export type EmailAddress = z.infer<typeof EmailAddressSchema>;
 export type EmailFlags = z.infer<typeof EmailFlagsSchema>;

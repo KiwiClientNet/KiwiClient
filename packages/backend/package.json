@@ -5,7 +5,7 @@
     "private": true,
     "scripts": {
         "dev": "GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo dev) tsx watch src/index.ts",
-        "build": "tsc -b && cp -r src/emails dist/emails",
+        "build": "tsc -b",
         "start": "node dist/index.js"
     },
     "keywords": [],
@@ -33,6 +33,7 @@
         "@types/express": "^5.0.6",
         "@types/jsonwebtoken": "^9.0.10",
         "@types/node": "^25.3.3",
+        "@types/nodemailer": "^8.0.0",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3"
     }

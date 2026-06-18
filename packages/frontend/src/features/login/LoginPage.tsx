@@ -1,22 +1,26 @@
 /**
- * @brief Combined login page with private-server form and Google login button.
+ * @brief Login page hosting the multi-step wizard and Google login.
  *
  * Both login paths navigate straight to the mailbox view on success so there
  * is no intermediate continue step. Users who reach this page while already
  * authenticated are redirected so the form is never shown to a logged-in user.
  */
 
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../auth/AuthContext";
 import Logo from "../../components/Logo";
-import { GoogleLogin } from "./GoogleLogin";
-import { LoginForm } from "./LoginForm";
+import { LoginWizard } from "./LoginWizard";
+import { useSeo } from "../../hooks/useSeo";
 
 export function LoginPage() {
     const { accessToken, loading } = useContext(AuthContext);
     const navigate = useNavigate();
-    const [isLoginFormDisabled, setIsLoginFormDisabled] = useState(false);
+
+    useSeo({
+        title: "Sign in — KiwiClient",
+        description: "Sign in to KiwiClient to access your self-hosted, Gmail, or Outlook email."
+    });
 
     useEffect(() => {
         if (!loading && accessToken) {
@@ -32,18 +36,17 @@ export function LoginPage() {
                 </nav>
 
                 <div className="max-w-xl">
-                    <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold">KiwiClient</h1>
+                    <p className="kiwi-eyebrow mb-2">Welcome back</p>
+                    <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold">KiwiClient<span className="text-kiwi-green">.</span></h1>
                     <h2 className="text-xl sm:text-2xl lg:text-4xl font-bold mt-1">Your New Email Client</h2>
-                    <div className="w-12 h-1.5 bg-kiwi-white my-4 sm:my-6 mx-auto lg:mx-0" />
-                    <p className="text-base sm:text-lg lg:text-xl">An email client to receive, organise, and send emails.</p>
+                    <div className="w-12 h-1.5 bg-kiwi-green rounded-full my-4 sm:my-6 mx-auto lg:mx-0" />
+                    <p className="text-base sm:text-lg lg:text-xl opacity-80">Your server, your client, your email.</p>
                 </div>
             </div>
 
             <div className="w-full lg:w-1/2 px-6 pb-10 sm:px-12 sm:pb-16 lg:p-16 flex flex-col justify-center items-center">
-                <div className="w-full max-w-md lg:max-w-lg rounded-2xl shadow-xl border-2 border-solid p-6 sm:p-8">
-                    <LoginForm isDisabled={isLoginFormDisabled} setIsDisabled={setIsLoginFormDisabled} />
-                    <hr className="border-t-2 my-6" />
-                    <GoogleLogin isDisabled={isLoginFormDisabled} setIsDisabled={setIsLoginFormDisabled} />
+                <div className="w-full max-w-md lg:max-w-lg kiwi-panel shadow-xl p-6 sm:p-8">
+                    <LoginWizard />
                 </div>
             </div>
         </div>

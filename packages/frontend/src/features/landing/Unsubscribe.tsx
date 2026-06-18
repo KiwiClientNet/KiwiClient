@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import Logo from "../../components/Logo";
+import { useSeo } from "../../hooks/useSeo";
 
 export default function Unsubscribe() {
+    useSeo({ title: "Unsubscribed — KiwiClient", noindex: true });
+
     return (
 
         <div className="flex flex-col items-center justify-center min-h-screen antialiased px-4 py-12 pb-64">
@@ -17,4 +20,3 @@ export default function Unsubscribe() {
 
     );
 }
-

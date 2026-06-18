@@ -71,7 +71,10 @@ export function mapMailbox(listResponse: ListResponse): Mailbox {
         parentPath: listResponse.parentPath ? listResponse.parentPath : undefined,
         specialUse: listResponse.specialUse ? listResponse.specialUse : undefined,
         flags: listResponse.flags ? Array.from(listResponse.flags) : [],
-        delimiter: listResponse.delimiter ?? "/"
+        delimiter: listResponse.delimiter ?? "/",
+        // LIST does not report unseen counts; the route fills this in with a
+        // STATUS query per mailbox after listing.
+        unseen: 0
     };
 }
 
@@ -118,12 +121,17 @@ export function mapEmailGlance(message: FetchMessageObject, mailboxPath: string)
         return null;
     }
 
+    const firstRecipient = message.envelope.to && message.envelope.to.length > 0
+        ? mapAddress(message.envelope.to[0])
+        : null;
+
     const dateIso = toIsoStringSafe(message.envelope.date);
 
     return {
         uniqueId: message.uid,
         mailboxPath,
         from: firstSender,
+        firstRecipient: firstRecipient ?? undefined,
         subject: message.envelope.subject && message.envelope.subject.length > 0 ? message.envelope.subject : "(No Subject)",
         dateIso,
         flags: parseImapFlags(message.flags),

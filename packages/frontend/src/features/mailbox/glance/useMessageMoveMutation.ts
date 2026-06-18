@@ -46,6 +46,7 @@ export function useMessageMoveMutation() {
                 if (!oldData) {
                     return oldData;
                 }
+                 
                 return {
                     ...oldData,
                     pages: oldData.pages.map(page => ({

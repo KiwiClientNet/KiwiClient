@@ -1,11 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Logo from "../../components/Logo";
+import { useSeo } from "../../hooks/useSeo";
 
 export default function UnsubscribeFailed() {
 
     const navigate = useNavigate();
     const [seconds, setSeconds] = useState(10);
+
+    useSeo({ title: "Unsubscribe failed — KiwiClient", noindex: true });
 
     useEffect(() => {
         if (seconds === 0) {
@@ -36,4 +39,3 @@ export default function UnsubscribeFailed() {
 
     );
 }
-

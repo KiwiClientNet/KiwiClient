@@ -7,22 +7,26 @@
  */
 
 import { z } from 'zod';
-import { DEFAULT_PORT } from './defaults.js';
+import { DEFAULT_IMAP_PORT, DEFAULT_SMTP_PORT } from './defaults.js';
 
 export * from './email.js';
 export * from './api.js';
 export * from './requests.js';
 export * from './imap_flags.js';
-export { DEFAULT_PORT } from './defaults.js';
+export * from './defaults.js';
 
 /**
- * @brief Optional advanced overrides passed during login.
+ * @brief Optional server overrides collected by the login wizard.
  *
- * Currently only the IMAP port is exposed but the schema is intentionally an
- * object so additional fields can be added without breaking the wire format.
+ * Hosts are optional because the backend derives them from the email domain
+ * ("mail." prefix) when absent; ports default to the standard secure ports
+ * so the wizard can prefill them.
  */
 export const AdvancedEmailServerConfigSchema = z.object({
-    port: z.number().default(DEFAULT_PORT)
+    imapHost: z.string().min(1).optional(),
+    imapPort: z.coerce.number().int().min(1).max(65535).default(DEFAULT_IMAP_PORT),
+    smtpHost: z.string().min(1).optional(),
+    smtpPort: z.coerce.number().int().min(1).max(65535).default(DEFAULT_SMTP_PORT)
 });
 
 /**
@@ -42,21 +46,21 @@ export const ServerLoginSchema = z.object({
  * @brief Request body for the private email server login endpoint.
  */
 export const LoginServerRequestSchema = z.object({
+    name: z.string(),
     email: z.string().email(),
-    password: z.string(),
-    rememberMe: z.boolean().default(false)
+    password: z.string().min(1),
+    rememberMe: z.boolean().default(false),
+    advancedConfig: AdvancedEmailServerConfigSchema.optional()
 });
 
-/** @brief Request body for signing up to the waitlist */
 export const LandingSignupRequestSchema = z.object({
     email: z.string().email(),
-})
+});
 
-/** @brief URL params for unsubscribing from the waitlist */
 export const LandingUnsubscribeRequestSchema = z.object({
     email: z.string().email(),
     token: z.string()
-})
+});
 
 /**
  * @brief Stored credentials for a Gmail login obtained via Google OAuth2.
@@ -66,11 +70,11 @@ export const LandingUnsubscribeRequestSchema = z.object({
  * to log in again.
  */
 export const GoogleLoginSchema = z.object({
+    name: z.string(),
     serverType: z.literal('GMAIL'),
     email: z.string().email(),
     accessCode: z.string(),
-    googleRefreshToken: z.string().optional(),
-    advancedConfig: AdvancedEmailServerConfigSchema.optional()
+    googleRefreshToken: z.string().optional()
 });
 
 /**
@@ -90,7 +94,10 @@ export const AuthResponseSchema = z.object({
     success: z.boolean(),
     accessToken: z.string().optional(),
     email: z.string().email().optional(),
-    message: z.string().optional()
+    name: z.string().optional(),
+    message: z.string().optional(),
+    protocol: z.enum(['IMAP', 'SMTP']).optional(),
+    field: z.enum(['host', 'port']).optional()
 });
 
 export type AdvancedEmailServerConfig = z.infer<typeof AdvancedEmailServerConfigSchema>;

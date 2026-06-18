@@ -11,7 +11,7 @@ import type { MouseEventHandler, ReactNode } from "react";
 
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     text: string;
     reverseColours?: boolean;
     disabled?: boolean;
@@ -60,12 +60,12 @@ export function Button({
             title={title}
             aria-label={iconOnly ? title : undefined}
             className={[
-                "whitespace-nowrap cursor-pointer border border-solid disabled:cursor-default transition-colors duration-200 flex flex-row justify-center items-center",
+                "whitespace-nowrap cursor-pointer font-bold border border-solid disabled:cursor-default transition-colors duration-200 flex flex-row justify-center items-center",
                 SIZE_CLASSES[size],
                 iconOnly ? "aspect-square" : "",
                 reverseColours
-                    ? "bg-kiwi-light-grey text-kiwi-black hover:bg-kiwi-white disabled:bg-kiwi-light-black disabled:text-kiwi-black"
-                    : "bg-kiwi-middle-black text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-kiwi-black",
+                    ? "bg-kiwi-green border-kiwi-green text-kiwi-black hover:bg-kiwi-white hover:border-kiwi-green disabled:bg-kiwi-light-black disabled:border-kiwi-light-black disabled:text-kiwi-middle-grey"
+                    : "bg-kiwi-middle-black border-kiwi-light-black text-kiwi-white hover:border-kiwi-green hover:text-kiwi-green disabled:bg-kiwi-light-black disabled:text-kiwi-middle-grey",
                 className ?? "",
             ].filter(Boolean).join(" ")}
             {...rest}
@@ -77,8 +77,8 @@ export function Button({
                 </svg>
             )}
             {icon}
-            {text}
             {inlineImageSource.length > 0 && <img src={inlineImageSource} alt={inlineImageAltText} width={24} height={24} loading="lazy" decoding="async" />}
+            {text}
         </button>
     );
 }
@@ -88,7 +88,7 @@ export function BorderlessButton({ text, disabled = false, onClickFunction, inli
         <button
             onClick={onClickFunction}
             disabled={disabled}
-            className="cursor-pointer w-full p-3 bg-kiwi-middle-black rounded-3xl text-kiwi-white hover:bg-kiwi-light-grey hover:text-kiwi-black disabled:bg-kiwi-light-black disabled:text-kiwi-black disabled:cursor-default transition-colors duration-200 flex flex-row gap-2 justify-center"
+            className="cursor-pointer w-full p-3 rounded-xl opacity-70 hover:opacity-100 hover:bg-kiwi-light-black disabled:opacity-40 disabled:cursor-default transition-all duration-200 flex flex-row gap-2 justify-center"
         >
             {text}
             {inlineImageSource.length > 0 && (
