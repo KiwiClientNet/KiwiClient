@@ -5,7 +5,7 @@
     "private": true,
     "scripts": {
         "dev": "GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo dev) tsx watch src/index.ts",
-        "build": "tsc -b",
+        "build": "tsc -b && mkdir -p dist/emails && cp src/emails/*.html dist/emails/",
         "start": "node dist/index.js"
     },
     "keywords": [],

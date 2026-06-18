@@ -14,6 +14,7 @@ export * from './api.js';
 export * from './requests.js';
 export * from './imap_flags.js';
 export * from './defaults.js';
+export { default as deduplicate } from './map.js';
 
 /**
  * @brief Optional server overrides collected by the login wizard.
