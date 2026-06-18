@@ -67,7 +67,7 @@ export function GoogleLogin({ isDisabled, setIsDisabled, onLoginFailed }: Google
 
     return (
         <Button
-            text="Login with Google"
+            text="Sign in with Google"
             disabled={isDisabled}
             onClickFunction={handleClick}
             inlineImageSource={gmailLogo}

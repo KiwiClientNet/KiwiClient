@@ -25,6 +25,7 @@ import { AuthContext } from "../../auth/AuthContext";
 import { Button } from "../../components/Button";
 import { Checkbox } from "../../components/Checkbox";
 import { GoogleLogin } from "./GoogleLogin";
+import { MicrosoftLogin } from "./MicrosoftLogin";
 
 const SUCCESS_REDIRECT_DELAY_MS = 2000;
 const LOGIN_TIMEOUT_MS = 30 * 1000;
@@ -499,6 +500,7 @@ export function LoginWizard() {
                         setIsDisabled={setIsSubmitting}
                         onLoginFailed={(message) => setBanner({ kind: "failure", message })}
                     />
+                    <MicrosoftLogin isDisabled={isSubmitting} />
                 </div>
             )}
 

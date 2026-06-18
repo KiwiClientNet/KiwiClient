@@ -77,8 +77,8 @@ export function Button({
                 </svg>
             )}
             {icon}
-            {text}
             {inlineImageSource.length > 0 && <img src={inlineImageSource} alt={inlineImageAltText} width={24} height={24} loading="lazy" decoding="async" />}
+            {text}
         </button>
     );
 }
