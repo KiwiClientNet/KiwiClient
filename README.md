@@ -12,6 +12,8 @@ KiwiClient is currently in development, you can visit [https://kiwiclient.net](h
 
 The `main` branch is currently representative of what's hosted on [https://kiwiclient.net](https://kiwiclient.net). The are other branches which are being used for development.
 
+![A screenshot of the client](./packages/frontend/src/assets/example_screenshots/sending.png)
+
 ### Developed (Initial Features/Improvements Welcome)
 - Login to self-hosted mail servers
 - Login to Google (Gmail) accounts
