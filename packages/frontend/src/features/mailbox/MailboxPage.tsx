@@ -22,6 +22,7 @@ import type { MailboxSelection } from "./types";
 import { mailboxesQueryKey } from "./queryKeys";
 import ComposeBox from "./compose/ComposeBox";
 import { useComposeEmailStore } from "../../store/composeEmailStore";
+import { useMailboxStore } from "../../store/mailboxStore";
 
 /**
  * @brief Picks a sensible default selection from the freshly-fetched tree.
@@ -55,13 +56,14 @@ export function MailboxPage() {
     const [mobileView, setMobileView] = useState<"glance" | "email">("glance");
     const selectedEmail = useSelectedEmailStore(state => state.selected);
     const clearSelectedEmail = useSelectedEmailStore(state => state.clear);
-    const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined);
+    const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined); // Probably should update this to use with zustand too
+    const setSentPath = useMailboxStore(state => state.setSentPath);
     const setHidden = useComposeEmailStore(state => state.setHidden);
 
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: mailboxesQueryKey(),
         queryFn: ({ signal }) => fetchMailboxes(authFetch, signal),
-        select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath), [])
+        select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath, setSentPath), [])
     });
 
     useEffect(() => {

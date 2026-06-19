@@ -18,7 +18,6 @@ import {
     MessageMoveUpdateSchema,
     MessageMoveUpdate,
     EmailToSend,
-    EmailToSendResponse,
     EmailToSendSchema
 } from "@KiwiClient/shared";
 import { decrypt, type TokenPayload } from "../auth_sessions.js";
@@ -294,11 +293,13 @@ router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, E
 
             // Can compile the message and add to the IMAP server so it appears in the sent folder
             const messageMime = smtpInstance.compileEmail(emailToSendParseResult.data);
-            const addedToSent = await imapInstance.addRawMimeToMailbox(messageMime, "Sent", ["\\Seen"]);
-
-            if (!addedToSent) {
-                response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Server failed to add message to the sent folder" });
-                return;
+            // Google seems to already add the sent email to the folder for you? 
+            if (loginBody.serverType !== "GMAIL") {
+                const addedToSent = await imapInstance.addRawMimeToMailbox(messageMime, emailToSendParseResult.data.sentFolder, ["\\Seen"]);
+                if (!addedToSent) {
+                    response.status(500).json({ success: false, code: "IMAP_COULD_NOT_MOVE_MESSAGE", message: "Server failed to add message to the sent folder" });
+                    return;
+                }
             }
 
             response.json({ success: true, data: {} });

@@ -5,11 +5,12 @@ import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import EmailEditor, { type EmailEditorHandle } from "./EmailEditor";
 import MessageForm, { type MessageFormHandle } from "./MessageForm";
 import { Button } from "../../../components/Button";
-import { type EmailToSend } from "@KiwiClient/shared";
+import { type EmailToSend, type EmailToSendResponse } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
 import { useToastStore } from "../../../store/toastStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { glanceQueryKey } from "../glance/queryKeys";
+import { useMailboxStore } from "../../../store/mailboxStore";
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
@@ -20,8 +21,10 @@ export default function ComposeBox() {
     const formRef = useRef<MessageFormHandle>(null);
     const { authFetch, email, name } = useContext(AuthContext);
     const queryClient = useQueryClient();
-    const setMessage = useToastStore((state) => state.setMessage);
+    const setMessage = useToastStore(state => state.setMessage);
     const [composeBoxTitle, setComposeBoxTitle] = useState("New message");
+    const sentPath = useMailboxStore(state => state.sentPath);
+
     // const [editing, setEditing] = useState(false);
 
     // useEffect(() => {
@@ -40,7 +43,7 @@ export default function ComposeBox() {
     }
 
     async function handleSend(): Promise<boolean> {
-        // TODO: Handle the UI when the user forgets to add stuff like a recipient, subject
+        // TODO: Handle the UI/prompt the user when the user forgets to add stuff like a recipient, subject
         const draft = formRef.current?.getDraft();
 
         if (!draft) {
@@ -52,6 +55,7 @@ export default function ComposeBox() {
             ...draft,
             replyTo: [{ name: name, address: email }],
             html: editorRef.current?.getHtml() ?? '',
+            sentFolder: sentPath
         };
 
         setMessage(`Sending message '${draft.subject}'...`, "loading");
@@ -72,14 +76,21 @@ export default function ComposeBox() {
             formRef.current?.clearDraft();
             editorRef.current?.clearEditor();
 
-            // TODO: Also make it obvious to the user that the mail is sending
-            // TODO: Handle what happens when the emails get rejected
+            // TODO: Also make it obvious to the user that the mail is sending with an alert or notfication as well as the status bar?
             setMessage("Message sent!", "success", 3000);
-            // TODO: Error handling if the message was sent but isn't moved to the sent folder
-            // TODO: Change the "Sent" folder to the actual one (like how trash works)
-            queryClient.invalidateQueries({ queryKey: glanceQueryKey("Sent") });
+
+            queryClient.invalidateQueries({ queryKey: glanceQueryKey(sentPath) });
             return true;
         }
+
+        const errorResponse = await response.json() as EmailToSendResponse;
+        if (!errorResponse.success && errorResponse.code === "IMAP_COULD_NOT_MOVE_MESSAGE") {
+            alert("Could not move sent message to sent folder"); // TODO: Should make the alerts nice with the UI
+        } else if (!errorResponse.success && errorResponse.code === "INTERNAL_ERROR") {
+            alert("Could not send message due to an internal server error");
+        }
+
+        setMessage(`Failed to send message '${draft.subject}'`, "error", 3000);
 
         return false;
     }
@@ -152,10 +163,8 @@ function Footer({ sendEmail }: FooterProps) {
         const sent = await sendEmail();
 
         if (sent) {
-            // setSendingStatus('succeeded');
             setSendingStatus('drafting'); // Return back to the default behaviour
         }
-
         setSendingStatus('failed');
     }
 
@@ -192,14 +201,12 @@ function Footer({ sendEmail }: FooterProps) {
 
 function getStatusIcon(status: SendingStatus) {
     switch (status) {
+        case 'succeeded': // I guess just reset it back to the default if there has been an error
+        case 'failed':
         case 'drafting':
             return (<PaperAirplaneIcon aria-hidden="true" className="size-4 -rotate-45" />);
         default:
         case 'sending':
             return (<ArrowPathIcon aria-hidden="true" className="size-4 animate-spin" />);
-
-
-        // TODO: Case failed and succeeded
-
     }
 }

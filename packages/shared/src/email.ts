@@ -95,6 +95,7 @@ export const EmailToSendSchema = z.object({
     subject: z.string(),
     html: z.string().optional(),
     text: z.string().optional(),
+    sentFolder: z.string(),
 });
 
 export type EmailAddress = z.infer<typeof EmailAddressSchema>;
