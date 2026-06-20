@@ -6,6 +6,7 @@ import Logo from "../../components/Logo";
 import LandingSignup, { type WaitlistOutcome } from "./LandingSignup";
 import { Slideshow } from "./Slideshow";
 import { useSeo } from "../../hooks/useSeo";
+import ViewOnGitHub from "../../components/ViewOnGitHub";
 
 const MANIFESTO_LINES = ["Your server", "Your client", "Your email"];
 
@@ -86,12 +87,15 @@ export default function WaitlistLanding() {
                             )}
                         </div>
 
-                        <p className="mt-1 text-xs opacity-40 max-w-md">
+                        <p className="text-xs opacity-40 max-w-md">
                             By submitting your email, you agree to our{" "}
                             <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-60 transition-opacity duration-300">Privacy Policy</Link>
                             {" "}and{" "}
                             <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-60 transition-opacity duration-300">Terms of Service</Link>.
                         </p>
+                        <span className="max-w-48">
+                            <ViewOnGitHub />
+                        </span>
                     </div>
                 </section>
             </main>
