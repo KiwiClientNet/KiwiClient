@@ -8,7 +8,7 @@ export default function UnsubscribeFailed() {
     const navigate = useNavigate();
     const [seconds, setSeconds] = useState(10);
 
-    useSeo({ title: "Unsubscribe failed — KiwiClient", noindex: true });
+    useSeo({ title: "Unsubscribe failed | KiwiClient", noindex: true });
 
     useEffect(() => {
         if (seconds === 0) {

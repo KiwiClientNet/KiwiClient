@@ -1,6 +1,11 @@
-# KiwiClient - a Free and Open Source Web Email Client
+# KiwiClient 
+## A Free and Open Source Web Email Client
 
-**KiwiClient is a web email client written in TypeScript using React and Node licenced under AGPL-3.0.** 
+**KiwiClient is a web email client written in TypeScript using React and Express.JS running in Node.JS licenced under AGPL-3.0.** 
+
+The intent for this project is to develop a fast, modern, and private email
+client for primarily self-hosted email clients but with some limited support
+for third-party services like Google (Gmail).
 
 <div align="center">
     <img alt="KiwiClient Logo" src="./packages/frontend/public/email-logo.png" alt="drawing" width="200"/>
@@ -26,14 +31,14 @@ The `main` branch is currently representative of what's hosted on [https://kiwic
 - Move mail to different mailboxes/folders (including trash folder)
 - Status bar
 - And all the UI for these features 
+- UI handling of composing and sending emails 
 
 ### Currently Being Developed
 
-- UI handling of composing and sending emails (backend in-place).
+- Reply + reply-all + forward 
 
 ### Up next for Development
  
-- Reply + reply-all + forward 
 - Drafts 
 - Attachments: receive and send
 - Search 

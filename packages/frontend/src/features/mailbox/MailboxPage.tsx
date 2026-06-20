@@ -23,6 +23,7 @@ import { mailboxesQueryKey } from "./queryKeys";
 import ComposeBox from "./compose/ComposeBox";
 import { useComposeEmailStore } from "../../store/composeEmailStore";
 import { useMailboxStore } from "../../store/mailboxStore";
+import { useSeo } from "../../hooks/useSeo";
 
 /**
  * @brief Picks a sensible default selection from the freshly-fetched tree.
@@ -59,6 +60,11 @@ export function MailboxPage() {
     const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined); // TODO: Probably should update this to use with zustand too
     const setSentPath = useMailboxStore(state => state.setSentPath);
     const setHidden = useComposeEmailStore(state => state.setHidden);
+
+    useSeo({
+        title: "KiwiClient Mailbox",
+        description: "The KiwiClient Mailbox"
+    });
 
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: mailboxesQueryKey(),

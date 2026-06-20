@@ -3,7 +3,7 @@ import Logo from "../../components/Logo";
 import { useSeo } from "../../hooks/useSeo";
 
 export default function Unsubscribe() {
-    useSeo({ title: "Unsubscribed — KiwiClient", noindex: true });
+    useSeo({ title: "Unsubscribed | KiwiClient", noindex: true });
 
     return (
 

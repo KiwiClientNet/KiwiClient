@@ -13,7 +13,7 @@ export default function WaitlistLanding() {
     const [outcome, setOutcome] = useState<WaitlistOutcome>("IDLE");
 
     useSeo({
-        title: "KiwiClient — Free, Open Source Email Client",
+        title: "KiwiClient | Free, Open Source Email Client",
         description: "Kiwi Client is a fast, private, free and open source email client for your self-hosted mail server, with Gmail and Outlook support on the way. Join the waitlist.",
         canonicalPath: "/"
     });

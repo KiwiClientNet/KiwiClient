@@ -18,7 +18,7 @@ export function LoginPage() {
     const navigate = useNavigate();
 
     useSeo({
-        title: "Sign in — KiwiClient",
+        title: "KiwiClient | Sign in",
         description: "Sign in to KiwiClient to access your self-hosted, Gmail, or Outlook email."
     });
 

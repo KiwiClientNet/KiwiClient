@@ -16,7 +16,7 @@ interface ComingSoonProps {
 }
 
 export default function ComingSoon({ title, description }: ComingSoonProps) {
-    useSeo({ title: `${title} — KiwiClient`, description });
+    useSeo({ title: `${title} | KiwiClient`, description });
 
     return (
         <div className="min-h-dvh flex flex-col items-center justify-center text-center px-6 gap-4">
