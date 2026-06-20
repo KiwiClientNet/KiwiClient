@@ -6,5 +6,6 @@ Allow: /login
 Disallow: /mail
 Disallow: /unsubscribe
 Disallow: /unsubscribe-failed
-Disallow: /unsubscribed
 Disallow: /api/
+
+Sitemap: https://kiwiclient.net/sitemap.xml

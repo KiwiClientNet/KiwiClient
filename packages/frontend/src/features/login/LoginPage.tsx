@@ -11,10 +11,16 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../auth/AuthContext";
 import Logo from "../../components/Logo";
 import { LoginWizard } from "./LoginWizard";
+import { useSeo } from "../../hooks/useSeo";
 
 export function LoginPage() {
     const { accessToken, loading } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    useSeo({
+        title: "Sign in — KiwiClient",
+        description: "Sign in to KiwiClient to access your self-hosted, Gmail, or Outlook email."
+    });
 
     useEffect(() => {
         if (!loading && accessToken) {

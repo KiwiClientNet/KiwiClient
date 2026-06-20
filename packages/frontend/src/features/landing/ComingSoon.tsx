@@ -8,6 +8,7 @@
 import { Link } from "react-router-dom";
 import Logo from "../../components/Logo";
 import ViewOnGitHub from "../../components/ViewOnGitHub";
+import { useSeo } from "../../hooks/useSeo";
 
 interface ComingSoonProps {
     title: string;
@@ -15,6 +16,8 @@ interface ComingSoonProps {
 }
 
 export default function ComingSoon({ title, description }: ComingSoonProps) {
+    useSeo({ title: `${title} — KiwiClient`, description });
+
     return (
         <div className="min-h-dvh flex flex-col items-center justify-center text-center px-6 gap-4">
             <Logo className="w-24 h-24" reverseLogo={true} />
