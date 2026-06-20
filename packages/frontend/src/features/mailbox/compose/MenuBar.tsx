@@ -133,6 +133,18 @@ const BLOCK_OPTIONS: ReadonlyArray<{ key: BlockType; label: string }> = [
     { key: 'h6', label: 'Label heading' },
 ];
 
+/**
+ * Shared styling for the three dropdown pickers (block type, font, size).
+ * Keeping it in one place means the pickers stay visually identical to each
+ * other and to the icon buttons without three copies drifting apart.
+ */
+const selectBase =
+    'h-8 cursor-pointer rounded-lg border border-transparent bg-transparent px-2 ' +
+    'text-xs font-medium text-kiwi-dark-black ' +
+    'transition-colors duration-150 ' +
+    'hover:bg-kiwi-light-grey/40 ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60';
+
 interface BlockTypePickerProps {
     value: BlockType;
     onChange: (next: BlockType) => void;
@@ -151,13 +163,7 @@ function BlockTypePicker({ value, onChange }: BlockTypePickerProps) {
             onChange={event => onChange(event.target.value as BlockType)}
             title="Text style"
             aria-label="Text style"
-            className={
-                'h-9 min-w-28 cursor-pointer rounded-md border border-transparent bg-transparent px-2 ' +
-                'text-xs font-medium text-kiwi-dark-black ' +
-                'transition-colors duration-150 ' +
-                'hover:bg-kiwi-light-grey/50 ' +
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60'
-            }
+            className={`${selectBase} min-w-28`}
         >
             {BLOCK_OPTIONS.map(option => (
                 <option key={option.key} value={option.key}>
@@ -186,13 +192,7 @@ function FontPicker({ value, onChange }: FontPickerProps) {
             }}
             title="Font family"
             aria-label="Font family"
-            className={
-                'h-9 cursor-pointer rounded-md border border-transparent bg-transparent px-2 ' +
-                'text-xs font-medium text-kiwi-dark-black ' +
-                'transition-colors duration-150 ' +
-                'hover:bg-kiwi-light-grey/50 ' +
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60'
-            }
+            className={selectBase}
             style={{ fontFamily: value || undefined }}
         >
             {FONT_STACKS.map(font => (
@@ -238,13 +238,7 @@ function FontSizePicker({ value, onChange }: FontSizePickerProps) {
             onChange={event => onChange(event.target.value)}
             title="Font size"
             aria-label="Font size"
-            className={
-                'h-9 min-w-16 cursor-pointer rounded-md border border-transparent bg-transparent px-2 ' +
-                'text-xs font-medium text-kiwi-dark-black ' +
-                'transition-colors duration-150 ' +
-                'hover:bg-kiwi-light-grey/50 ' +
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60'
-            }
+            className={`${selectBase} min-w-16`}
         >
             {FONT_SIZES.map(size => (
                 <option key={size.value} value={size.value}>
@@ -371,9 +365,9 @@ interface ToolButtonProps {
 }
 
 const toolButtonBase =
-    'flex items-center justify-center h-9 min-w-9 px-2 rounded-md text-kiwi-dark-grey ' +
+    'flex items-center justify-center h-8 min-w-8 px-1.5 rounded-lg text-kiwi-dark-grey ' +
     'transition-colors duration-150 ' +
-    'hover:bg-kiwi-light-grey/50 hover:text-kiwi-black ' +
+    'hover:bg-kiwi-light-grey/40 hover:text-kiwi-black ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kiwi-green/60 ' +
     'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-kiwi-dark-grey';
 
@@ -397,11 +391,7 @@ function ToolButton({ onClick, label, isActive, disabled, icon: Icon, children }
 }
 
 function ToolGroup({ children }: { children: ReactNode }) {
-    return <div className="flex items-center">{children}</div>;
-}
-
-function ToolDivider() {
-    return <div aria-hidden="true" className="mx-1 h-6 w-px self-center bg-kiwi-light-grey" />;
+    return <div className="flex items-center gap-0.5">{children}</div>;
 }
 
 export default function MenuBar({ editor }: MenuBarProps) {
@@ -444,9 +434,9 @@ export default function MenuBar({ editor }: MenuBarProps) {
             role="toolbar"
             aria-label="Email formatting toolbar"
             className={
-                'flex flex-wrap items-center gap-y-1 ' +
-                'rounded-lg border border-kiwi-light-grey bg-kiwi-white ' +
-                'px-1.5 py-1 shadow-sm'
+                'flex flex-wrap items-center gap-x-3 gap-y-1 ' +
+                'rounded-xl border border-kiwi-light-grey/60 bg-kiwi-white ' +
+                'px-2 py-1.5'
             }
         >
 
@@ -484,8 +474,6 @@ export default function MenuBar({ editor }: MenuBarProps) {
                 />
             </ToolGroup>
 
-            <ToolDivider />
-
             <ToolGroup>
                 <ToolButton
                     label="Bold"
@@ -517,8 +505,6 @@ export default function MenuBar({ editor }: MenuBarProps) {
                 />
             </ToolGroup>
 
-            <ToolDivider />
-
             <ToolGroup>
                 <ToolButton
                     label="Bullet list"
@@ -545,8 +531,6 @@ export default function MenuBar({ editor }: MenuBarProps) {
                     isActive={editorState.isCodeBlock}
                 />
             </ToolGroup>
-
-            <ToolDivider />
 
             <ToolGroup>
                 <ToolButton
@@ -578,8 +562,6 @@ export default function MenuBar({ editor }: MenuBarProps) {
                 />
             </ToolGroup>
 
-            <ToolDivider />
-
             <ToolGroup>
                 <ToolButton
                     label="Clear inline formatting"
@@ -593,8 +575,6 @@ export default function MenuBar({ editor }: MenuBarProps) {
                     ¶✕
                 </ToolButton>
             </ToolGroup>
-
-            <ToolDivider />
 
             <ToolGroup>
                 <ToolButton

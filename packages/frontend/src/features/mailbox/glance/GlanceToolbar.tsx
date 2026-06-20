@@ -15,7 +15,7 @@ import { Checkbox } from "../../../components/Checkbox";
 import { useMessageFlagsMutation } from "./useMessageFlagsMutation";
 import { useMessageMoveMutation } from "./useMessageMoveMutation";
 import { FolderInput, MailOpen, Trash2 } from "lucide-react";
-import markUnreadIconRaw from "../../../assets/icons/mark-unread.svg?raw";
+import UnreadMailIcon from "../../../components/UnreadMailIcon";
 
 interface GlanceToolbarProps {
     selectedMailboxName: string;
@@ -89,14 +89,14 @@ export function GlanceToolbar({
 
             <div
                 aria-hidden={!hasSelection}
-                className={`flex flex-row items-center gap-1 min-w-0 transition-opacity duration-200 ${hasSelection ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                className={`flex flex-row items-center gap-1 min-w-0 ${hasSelection ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             >
                 <span className="text-xs font-bold text-kiwi-green border border-kiwi-green/40 rounded-full px-2 py-0.5 mr-1 whitespace-nowrap">
                     {selectedUniqueIds.length} selected
                 </span>
                 <ToolbarIconButton title={areAllSelectedRead ? "Mark unread" : "Mark read"} onClick={toggleReadState}>
                     {areAllSelectedRead
-                        ? <span aria-hidden="true" className="block size-5 [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: markUnreadIconRaw }} />
+                        ? <UnreadMailIcon className="block size-5" />
                         : <MailOpen className="size-5" />}
                 </ToolbarIconButton>
                 <ToolbarIconButton title={areAllSelectedStarred ? "Unstar" : "Star"} onClick={toggleStarredState}>

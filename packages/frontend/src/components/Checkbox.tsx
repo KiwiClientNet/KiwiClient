@@ -24,7 +24,7 @@ export function Checkbox({ checked, onChange, className = "" }: CheckboxProps) {
             onClick={(event: MouseEvent<HTMLLabelElement>) => event.stopPropagation()}
         >
             <input type="checkbox" className="peer sr-only" checked={checked} onChange={onChange} />
-            <div className="w-5 h-5 rounded border-2 border-kiwi-dark-grey bg-transparent transition-all peer-checked:bg-kiwi-green peer-checked:border-kiwi-green text-kiwi-black flex items-center justify-center">
+            <div className="w-5 h-5 rounded border-2 border-kiwi-dark-grey bg-transparent peer-checked:bg-kiwi-green peer-checked:border-kiwi-green text-kiwi-black flex items-center justify-center">
                 {checked && <CheckIcon />}
             </div>
         </label>
