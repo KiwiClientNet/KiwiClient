@@ -56,7 +56,7 @@ export function MailboxPage() {
     const [mobileView, setMobileView] = useState<"glance" | "email">("glance");
     const selectedEmail = useSelectedEmailStore(state => state.selected);
     const clearSelectedEmail = useSelectedEmailStore(state => state.clear);
-    const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined); // Probably should update this to use with zustand too
+    const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined); // TODO: Probably should update this to use with zustand too
     const setSentPath = useMailboxStore(state => state.setSentPath);
     const setHidden = useComposeEmailStore(state => state.setHidden);
 
@@ -148,6 +148,7 @@ export function MailboxPage() {
 
                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row lg:gap-2 lg:m-3 lg:p-2 lg:kiwi-panel">
                     <div className={`${mobileView === "glance" ? "flex" : "hidden"} lg:flex flex-col flex-1 lg:flex-none lg:w-md xl:w-lg 2xl:w-xl min-h-0`}>
+                        {/* TODO: When updated with zustand, no longer need to prop drill */}
                         <Glance selectedMailbox={selectedMailbox} specialTrashFolderPath={specialTrashFolderPath} />
                     </div>
                     <div className={`${mobileView === "email" ? "flex" : "hidden"} lg:flex flex-col flex-1 min-h-0`}>
@@ -164,7 +165,9 @@ export function MailboxPage() {
                         <PencilIcon className="size-8" />
                     </button>
                 )}
-                <StatusBar />
+                <div className={`${mobileView === "email" ? "hidden" : "block"} lg:block`}>
+                    <StatusBar />
+                </div>
                 <ComposeBox />
             </div>
         </div>

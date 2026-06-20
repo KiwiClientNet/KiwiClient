@@ -26,7 +26,7 @@ export function UserMenu() {
     };
 
     return (
-        <div className="relative z-50 ml-auto shrink-0">
+        <div className="relative shrink-0">
             {isOpen && (
                 <div
                     aria-hidden="true"
@@ -36,7 +36,8 @@ export function UserMenu() {
             )}
 
             {isOpen && (
-                <div role="menu" className="absolute bottom-full right-0 z-40 mb-2 w-56 kiwi-panel overflow-hidden shadow-kiwi-black shadow-lg">
+                <div role="menu" className="absolute bottom-full z-40 mb-2 w-56 kiwi-panel shadow-kiwi-black shadow-lg">
+                    {/* <div role="menu" className="mb-2 w-56 kiwi-panel overflow-hidden shadow-kiwi-black shadow-lg"> */}
                     <div className="px-4 py-3 border-b border-kiwi-light-black">
                         <p className="font-bold truncate">{name || "Signed in"}</p>
                         <p className="text-xs opacity-60 truncate">{email}</p>
@@ -55,7 +56,7 @@ export function UserMenu() {
                         type="button"
                         role="menuitem"
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-kiwi-light-black transition-colors duration-200"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm cursor-pointer rounded-b-xl hover:bg-kiwi-light-black transition-colors duration-200"
                     >
                         <ArrowRightStartOnRectangleIcon className="size-4" />
                         Logout
