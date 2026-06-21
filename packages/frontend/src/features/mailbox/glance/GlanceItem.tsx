@@ -119,7 +119,7 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
                 <div className="flex justify-between items-center w-full gap-4">
                     <div className="flex flex-1 min-w-0 max-w-9/12 items-center gap-2">
                         <span className="font-medium truncate">{counterpartName}</span>
-                        <span className="text-sm opacity-60 truncate">{counterpartAddress}</span>
+                        <span className="text-sm opacity-60 truncate hidden md:block">{counterpartAddress}</span>
                     </div>
                     <div className="shrink-0 text-xs opacity-80 whitespace-nowrap flex items-center h-8">
                         <span className="group-hover:hidden">{formattedDateTime}</span>
