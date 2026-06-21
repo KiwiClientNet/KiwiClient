@@ -1,7 +1,9 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { forwardRef, useContext, useEffect, useImperativeHandle, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useComposeEmailStore } from '../../../store/composeEmailStore';
-import type { EmailAddress } from '@KiwiClient/shared';
+import type { EmailAddress, EmailMessage } from '@KiwiClient/shared';
+import { AuthContext } from '../../../auth/AuthContext';
+import type { NewEmailComposeType } from './ComposeBox';
 
 /**
  * Permissive but not RFC-5322 strict. Catches typos like missing `@` or TLD,
@@ -149,10 +151,50 @@ interface MessageFormValues {
 export interface MessageFormHandle {
     getDraft: () => MessageFormValues;
     clearDraft: () => void;
+    setDraft: (previousEmailToPrefill: EmailMessage, type: NewEmailComposeType) => void;
 }
 
 interface MessageFormProps {
     setComposeBoxTitle: (newSubject: string) => void;
+}
+
+function updateMessageSubject(currentTitle: string, type: NewEmailComposeType): string {
+
+    let prefix;
+    let oppositePrefix;
+
+    let newSubject;
+
+    switch (type) {
+        case 'new':
+            prefix = '';
+            oppositePrefix = '';
+            break
+        case 'reply':
+        case 'reply_all':
+            prefix = 'Re';
+            oppositePrefix = 'Fwd';
+            break;
+        case 'forward':
+            prefix = 'Fwd';
+            oppositePrefix = 'Re';
+            break;
+    }
+
+    const regex = new RegExp(`^(\\b${oppositePrefix}\\b:\\s*)`);
+
+    if (currentTitle.startsWith(oppositePrefix)) {
+        newSubject = currentTitle.replace(regex, `${prefix}: `);
+
+    } else if (!currentTitle.startsWith(prefix)) {
+        newSubject = `${prefix}: ${currentTitle}`;
+    }
+    else {
+        newSubject = currentTitle;
+    }
+
+    return newSubject;
+
 }
 
 const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setComposeBoxTitle }, ref) => {
@@ -164,6 +206,7 @@ const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setCompos
     const [subject, setSubject] = useState('');
     const hidden = useComposeEmailStore(state => state.hidden);
     const toInputRef = useRef<HTMLInputElement>(null);
+    const { email } = useContext(AuthContext);
 
     function handleSubjectInput(event: React.ChangeEvent<HTMLInputElement>): void {
         event.preventDefault();
@@ -197,6 +240,47 @@ const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setCompos
             setBcc([]);
             setSubject('')
         },
+
+        setDraft: (previousEmailToPrefill, type) => {
+            // Clear everything
+            setTo([]);
+            setCc([]);
+            setBcc([]);
+            setSubject('');
+            setShowCc(false);
+
+            // By definition, you can't set blind CC from replying/forwarding
+            const newSubject = updateMessageSubject(previousEmailToPrefill.subject, type);
+            const senderReplyEmailList = previousEmailToPrefill.replyTo.length !== 0 ? previousEmailToPrefill.replyTo : [previousEmailToPrefill.from];
+            switch (type) {
+                default:
+                case 'forward':
+                case 'new':
+                    break;
+                case 'reply_all':
+                    // Replying to all means replying to the sender + any others in the 'to' field (excluding ourselves)
+                    // TODO: Add names - might be something to think about for
+                    // the whole sending process, we will know names when
+                    // replying as they have sent them to us but we don't
+                    // really know when sending an email for the first time
+                    // (unless we implement contacts list)
+                    const allAddresses = senderReplyEmailList.concat(previousEmailToPrefill.to.filter(recipient => recipient.address !== email))
+                    const allRecipients = allAddresses.map(addressToReplyTo => ({ id: crypto.randomUUID(), valid: true, address: addressToReplyTo.address }))
+                    setTo(allRecipients);
+                    const ccAddresses = previousEmailToPrefill.cc.map(sendee => ({ id: crypto.randomUUID(), valid: true, address: sendee.address }))
+                    setCc(ccAddresses);
+                    if (ccAddresses.length !== 0) {
+                        setShowCc(true);
+                    }
+                    break;
+                case 'reply':
+                    // Replying only means to reply directly to the sender
+                    setTo(senderReplyEmailList.map(sendee => ({ id: crypto.randomUUID(), valid: true, address: sendee.address })));
+                    break;
+            }
+            setSubject(newSubject);
+            setComposeBoxTitle(newSubject);
+        }
 
     }), [to, cc, bcc, subject])
 

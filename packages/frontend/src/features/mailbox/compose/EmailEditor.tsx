@@ -4,6 +4,8 @@ import Link from '@tiptap/extension-link'
 import StarterKit from '@tiptap/starter-kit'
 import MenuBar from './MenuBar'
 import { forwardRef, useImperativeHandle } from 'react'
+import type { EmailMessage } from '@KiwiClient/shared'
+import type { NewEmailComposeType } from './ComposeBox'
 
 // See https://tiptap.dev/docs/editor/extensions/marks/link for link information
 const extensions = [TextStyleKit, StarterKit, Link.configure({
@@ -64,11 +66,46 @@ const extensions = [TextStyleKit, StarterKit, Link.configure({
             return false
         }
     },
-}),]
+})]
+
+function messageToPrepend(previousEmailGlance: EmailMessage, type: NewEmailComposeType): string {
+    let preface = '';
+    const dateObj = new Date(previousEmailGlance.dateIso);
+    const day = dateObj.toLocaleDateString(undefined, { weekday: "long" });
+    const date = dateObj.toLocaleDateString(); // local locale date format
+    const time24 = dateObj.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    });
+
+    switch (type) {
+        case 'new':
+            break;
+        case 'reply':
+        case 'reply_all':
+            preface = `On ${day}, ${date} at ${time24}, ${previousEmailGlance.from.name ?? ""} &lt;${previousEmailGlance.from.address}&gt; wrote:`;
+            break;
+        case 'forward':
+            preface = `
+------- Forwarded Message -------<br><br>
+From: ${previousEmailGlance.from.name ?? ""} &lt;${previousEmailGlance.from.address}&gt;<br>
+Date: On ${day}, ${date} at ${time24};<br>
+Subject: ${previousEmailGlance.subject};<br>
+To: ${previousEmailGlance.to.map(recipient => `${recipient.name ?? ""} &lt;${recipient.address}&gt`).join(", ")};<br>
+CC: ${previousEmailGlance.cc.map(recipient => `${recipient.name ?? ""} &lt;${recipient.address}&gt`).join(", ")}<br>
+`
+            break;
+    }
+
+    return preface;
+
+}
 
 export interface EmailEditorHandle {
     getHtml: () => string;
     clearEditor: () => void;
+    setEditor: (previousEmailGlance: EmailMessage, type: NewEmailComposeType) => void;
 }
 
 // const INITIAL_MSG = `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`
@@ -87,6 +124,13 @@ const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
         clearEditor: () => {
             // editor.commands.setContent(INITIAL_MSG);
             editor.commands.clearContent();
+        },
+
+        setEditor: (previousEmailGlance, type) => {
+            // Clear the content
+            editor.commands.clearContent();
+            const preface = messageToPrepend(previousEmailGlance, type);
+            editor.commands.setContent(preface);
         }
     }), [editor]);
 

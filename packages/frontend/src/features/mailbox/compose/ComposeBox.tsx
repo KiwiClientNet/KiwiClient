@@ -12,6 +12,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { glanceQueryKey } from "../glance/queryKeys";
 import { useMailboxStore } from "../../../store/mailboxStore";
 
+export type NewEmailComposeType = 'new' | 'reply' | 'reply_all' | 'forward';
+
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
     const [minimized, setMinimized] = useState<boolean>(false);
@@ -24,6 +26,8 @@ export default function ComposeBox() {
     const setMessage = useToastStore(state => state.setMessage);
     const [composeBoxTitle, setComposeBoxTitle] = useState("New message");
     const sentPath = useMailboxStore(state => state.sentPath);
+    const setFormRef = useComposeEmailStore(state => state.setFormRef);
+    const setEditorRef = useComposeEmailStore(state => state.setEditorRef);
 
     // const [editing, setEditing] = useState(false);
 
@@ -98,6 +102,11 @@ export default function ComposeBox() {
     useEffect(() => {
         return () => setHidden(true);
     }, [])
+
+    useEffect(() => {
+        setFormRef(formRef.current);
+        setEditorRef(editorRef.current);
+    }, []);
 
     return (
         <section

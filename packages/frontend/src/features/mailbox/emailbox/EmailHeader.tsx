@@ -13,6 +13,8 @@ import type { EmailAddress } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
 import { fetchSingleMessage } from "../../../api/messages";
 import { emailQueryKey } from "../glance/queryKeys";
+import { useComposeEmailStore } from "../../../store/composeEmailStore";
+import type { NewEmailComposeType } from "../compose/ComposeBox";
 
 interface SelectedEmailReference {
     uniqueId: number;
@@ -69,7 +71,11 @@ function HeaderActionButton({ label, icon, onClick }: HeaderActionButtonProps) {
 }
 
 export function EmailHeader({ selected }: { selected: SelectedEmailReference }) {
+
     const { authFetch } = useContext(AuthContext);
+    const setHidden = useComposeEmailStore(state => state.setHidden);
+    const formRef = useComposeEmailStore(state => state.formRef);
+    const editorRef = useComposeEmailStore(state => state.editorRef);
 
     const { data } = useQuery({
         queryKey: emailQueryKey(selected.mailboxPath, selected.uniqueId),
@@ -90,6 +96,16 @@ export function EmailHeader({ selected }: { selected: SelectedEmailReference }) 
         );
     }
 
+    // Open the compose message box up
+    const handleClick = (type: NewEmailComposeType) => {
+        setHidden(false);
+        if (!formRef || !editorRef) {
+            return;
+        }
+        formRef.setDraft(data, type);
+        editorRef.setEditor(data, type);
+    };
+
     return (
         <div className="kiwi-panel p-4 mb-2 shrink-0">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
@@ -104,9 +120,9 @@ export function EmailHeader({ selected }: { selected: SelectedEmailReference }) 
             </div>
 
             <div className="mt-3 flex items-center gap-2">
-                <HeaderActionButton label="Reply" icon={<Reply className="size-4" />} onClick={() => alert("Replying coming soon!")} />
-                <HeaderActionButton label="Reply all" icon={<ReplyAll className="size-4" />} onClick={() => alert("Replying coming soon!")} />
-                <HeaderActionButton label="Forward" icon={<Forward className="size-4" />} onClick={() => alert("Forwarding coming soon!")} />
+                <HeaderActionButton label="Reply" icon={<Reply className="size-4" />} onClick={() => handleClick('reply')} />
+                <HeaderActionButton label="Reply all" icon={<ReplyAll className="size-4" />} onClick={() => handleClick('reply_all')} />
+                <HeaderActionButton label="Forward" icon={<Forward className="size-4" />} onClick={() => handleClick('forward')} />
             </div>
         </div>
     );
