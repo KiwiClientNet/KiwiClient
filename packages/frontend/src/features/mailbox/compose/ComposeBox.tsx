@@ -112,8 +112,8 @@ export default function ComposeBox() {
         <section
             className={[
                 hidden ? "hidden" : "flex",
-                "fixed inset-0 z-50 flex-col h-dvh w-full overflow-auto",
-                "md:inset-auto md:bottom-0 md:right-4 md:overflow-hidden",
+                "fixed inset-0 z-50 flex-col h-dvh w-full overflow-hidden",
+                "md:inset-auto md:bottom-0 md:right-4",
                 "bg-kiwi-white text-kiwi-black shadow-2xl border border-kiwi-middle-grey",
                 "md:rounded-t-2xl transition-all duration-300 ease-out",
                 // desktop size state
@@ -148,7 +148,7 @@ export default function ComposeBox() {
                 </div>
             </header>
             <MessageForm setComposeBoxTitle={setComposeBoxTitle} ref={formRef} />
-            <div className={minimized ? "invisible" : "flex flex-1 flex-col overflow-y-auto p-4"}>
+            <div className={minimized ? "invisible" : "flex min-h-0 flex-1 flex-col overflow-y-auto p-4"}>
                 <EmailEditor ref={editorRef} />
             </div>
             {!minimized && <Footer sendEmail={handleSend} />}

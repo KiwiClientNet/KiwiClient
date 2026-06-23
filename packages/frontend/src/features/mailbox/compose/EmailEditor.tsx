@@ -155,8 +155,8 @@ const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
             <EditorContent
                 editor={editor}
                 className={
-                    'flex-1 min-h-40 rounded-md border border-kiwi-light-grey ' +
-                    'bg-kiwi-white p-3 text-sm leading-relaxed text-kiwi-black ' +
+                    'flex-1 min-h-0 md:min-h-40 rounded-md border border-kiwi-light-grey ' +
+                    'bg-kiwi-white p-3 text-base md:text-sm leading-relaxed text-kiwi-black ' +
                     'overflow-y-auto kiwi-scrollbar ' +
                     'focus-within:border-kiwi-green ' +
                     '[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full ' +
