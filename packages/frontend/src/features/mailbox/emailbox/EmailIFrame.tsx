@@ -7,93 +7,28 @@
  * DOMPurify before being assigned to the iframe document.
  */
 
-import { useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import DOMPurify from "dompurify";
-import { useQuery } from "@tanstack/react-query";
-import { AuthContext } from "../../../auth/AuthContext";
-import { fetchSingleMessage } from "../../../api/messages";
-import { emailQueryKey } from "../glance/queryKeys";
-import { EmailLoading } from "./EmailLoading";
-
-interface SelectedEmailReference {
-    uniqueId: number;
-    mailboxPath: string;
-}
-
-// The element whose scrollHeight drives the iframe height. Kept as an id so the
-// parent can find it inside the iframe document after each load.
-const EMAIL_ROOT_ID = "kiwi-email-root";
+import type { EmailMessage } from "@KiwiClient/shared";
+import buildIframeDocument, { EMAIL_ROOT_ID } from "./buildIFrameDocument";
 
 // Height changes smaller than this are ignored to stop sub-pixel reflow churn
 // from looping the ResizeObserver.
 const HEIGHT_CHANGE_THRESHOLD_PX = 8;
 
-/**
- * @brief Wraps body content in a minimal HTML document for the iframe srcDoc.
- *
- * - The base tag sends external links to a new tab without rel attributes.
- * - body overflow is hidden because the email never scrolls inside the
- *   iframe: the document is zoomed to fit the pane width and the iframe is
- *   sized to full content height, so the outer pane owns all scrolling.
- * - No `* { max-width }` or `table-layout: fixed`: those corrupt fixed-width
- *   table layouts. The email's own widths are left intact and the whole
- *   document is scaled instead.
- */
-function buildIframeDocument(bodyContent: string): string {
-    return `<!DOCTYPE html>
-<html>
-<head>
-<base target="_blank">
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width" />
-<style>
-html { margin: 0; }
-body {
-    margin: 0;
-    background: #ffffff;
-    overflow: hidden;
-}
-#${EMAIL_ROOT_ID} { box-sizing: content-box; }
-.kiwi-email-content { width: 100%; padding: 8px; box-sizing: border-box; }
-/* Free-standing photos (e.g. a huge image pasted into a reply) are capped to
- * the pane so they cannot define the document's natural width and shrink the
- * rest of the email. Images inside tables keep their sizes because sliced
- * table layouts in marketing email break when their cells rescale; those
- * emails are handled by the whole-document zoom instead. */
-img:not(table *) { max-width: 100%; height: auto; }
-table { table-layout: auto; }
-pre { white-space: pre-wrap; word-break: break-word; }
-</style>
-</head>
-<body>
-<div id="${EMAIL_ROOT_ID}">
-<div class="kiwi-email-content">
-${bodyContent}
-</div>
-</div>
-</body>
-</html>`;
+
+interface EmailIFrameProps {
+    status: "error" | "success" | "pending";
+    data: EmailMessage
 }
 
-export function EmailIframe({ selected }: { selected: SelectedEmailReference }) {
-    const { authFetch } = useContext(AuthContext);
-
+export function EmailIFrame({ status, data }: EmailIFrameProps) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const rootObserverRef = useRef<ResizeObserver | null>(null);
     const previousHeightRef = useRef<number>(0);
     const naturalWidthRef = useRef<number>(0);
     const appliedScaleRef = useRef<number>(1);
     const postFitScrollWidthRef = useRef<number>(0);
-
-    const { data, status, isLoading } = useQuery({
-        queryKey: emailQueryKey(selected.mailboxPath, selected.uniqueId),
-        queryFn: () => fetchSingleMessage({
-            authFetch,
-            mailboxPath: selected.mailboxPath,
-            uniqueId: selected.uniqueId
-        }),
-        staleTime: 1000 * 60 * 5
-    });
 
     const iframeDocument = useMemo(() => {
         if (status === "pending") {
@@ -194,12 +129,7 @@ export function EmailIframe({ selected }: { selected: SelectedEmailReference }) 
     }, [syncIframeSize]);
 
     return (
-        <div className="h-full w-full relative rounded bg-kiwi-white overflow-y-auto overflow-x-hidden kiwi-scrollbar-on-light">
-            {isLoading && (
-                <div className="absolute inset-0 z-10">
-                    <EmailLoading />
-                </div>
-            )}
+        <div className="h-full w-full relative rounded bg-kiwi-white overflow-y-auto overflow-x-hidden kiwi-scrollbar-on-light" >
             <iframe
                 ref={iframeRef}
                 title="Email Content"

@@ -154,10 +154,6 @@ export interface MessageFormHandle {
     setDraft: (previousEmailToPrefill: EmailMessage, type: NewEmailComposeType) => void;
 }
 
-interface MessageFormProps {
-    setComposeBoxTitle: (newSubject: string) => void;
-}
-
 function updateMessageSubject(currentTitle: string, type: NewEmailComposeType): string {
 
     let prefix;
@@ -197,6 +193,10 @@ function updateMessageSubject(currentTitle: string, type: NewEmailComposeType): 
 
 }
 
+interface MessageFormProps {
+    setComposeBoxTitle: (newSubject: string) => void;
+}
+
 const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setComposeBoxTitle }, ref) => {
     const [to, setTo] = useState<Recipient[]>([]);
     const [cc, setCc] = useState<Recipient[]>([]);
@@ -224,7 +224,7 @@ const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setCompos
         if (!hidden) {
             toInputRef.current?.focus();
         }
-    }, [hidden]);
+    }, [hidden, to]); // By adding `to` here, we make sure it's refocused if someone presses 'Forward' after pressing 'Reply'
 
     useImperativeHandle(ref, () => ({
         getDraft: () => ({

@@ -6,20 +6,10 @@
  * are UI only for now; their handlers are placeholders.
  */
 
-import { useContext } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Forward, Reply, ReplyAll } from "lucide-react";
-import type { EmailAddress } from "@KiwiClient/shared";
-import { AuthContext } from "../../../auth/AuthContext";
-import { fetchSingleMessage } from "../../../api/messages";
-import { emailQueryKey } from "../glance/queryKeys";
+import type { EmailAddress, EmailMessage } from "@KiwiClient/shared";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import type { NewEmailComposeType } from "../compose/ComposeBox";
-
-interface SelectedEmailReference {
-    uniqueId: number;
-    mailboxPath: string;
-}
 
 function formatFullDateTime(dateIso: string): string {
     return new Date(dateIso).toLocaleString(navigator.language, { dateStyle: "long", timeStyle: "short" });
@@ -70,31 +60,15 @@ function HeaderActionButton({ label, icon, onClick }: HeaderActionButtonProps) {
     );
 }
 
-export function EmailHeader({ selected }: { selected: SelectedEmailReference }) {
+interface EmailHeaderProps {
+    data: EmailMessage;
+}
 
-    const { authFetch } = useContext(AuthContext);
+export function EmailHeader({ data }: EmailHeaderProps) {
+
     const setHidden = useComposeEmailStore(state => state.setHidden);
     const formRef = useComposeEmailStore(state => state.formRef);
     const editorRef = useComposeEmailStore(state => state.editorRef);
-
-    const { data } = useQuery({
-        queryKey: emailQueryKey(selected.mailboxPath, selected.uniqueId),
-        queryFn: () => fetchSingleMessage({
-            authFetch,
-            mailboxPath: selected.mailboxPath,
-            uniqueId: selected.uniqueId
-        }),
-        staleTime: 1000 * 60 * 5
-    });
-
-    if (!data) {
-        return (
-            <div className="kiwi-panel p-4 mb-2 shrink-0 space-y-3">
-                <div className="h-4 w-2/3 animate-pulse rounded bg-kiwi-light-black" />
-                <div className="h-3 w-1/2 animate-pulse rounded bg-kiwi-light-black" />
-            </div>
-        );
-    }
 
     // Open the compose message box up
     const handleClick = (type: NewEmailComposeType) => {
@@ -102,8 +76,15 @@ export function EmailHeader({ selected }: { selected: SelectedEmailReference }) 
         if (!formRef || !editorRef) {
             return;
         }
+
         formRef.setDraft(data, type);
         editorRef.setEditor(data, type);
+
+        // Has to be called after we set the content to make sure the cursor is at the start
+        if (type === "reply" || type === "reply_all") {
+            editorRef.focusInput();
+        }
+
     };
 
     return (
