@@ -32,13 +32,13 @@ The `main` branch is currently representative of what's hosted on [https://kiwic
 - Status bar
 - And all the UI for these features 
 - UI handling of composing and sending emails 
+- Reply + reply-all + forward 
 
 ### Currently Being Developed
 
-- Reply + reply-all + forward 
+- Drafts 
 
 ### Up next for Development
  
-- Drafts 
 - Attachments: receive and send
 - Search 
