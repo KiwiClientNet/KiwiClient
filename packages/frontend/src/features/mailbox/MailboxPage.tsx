@@ -160,7 +160,7 @@ export function MailboxPage() {
                     </div>
                     <div className={`${mobileView === "email" ? "flex" : "hidden"} lg:flex flex-col flex-1 min-h-0`}>
                         <div className="h-full w-full rounded-none lg:rounded-2xl bg-kiwi-black p-2 flex flex-col min-h-0">
-                            <div className="flex-1 min-h-0 rounded-xl flex items-center justify-center overflow-auto">
+                            <div className="flex-1 min-h-0 rounded-xl flex items-center justify-center overflow-auto kiwi-scrollbar">
                                 {selectedEmail ? <Emailbox onBack={handleBackToGlance} /> : <WelcomeMessage />}
                             </div>
                         </div>
