@@ -27,8 +27,8 @@ export default function WaitlistLanding() {
     const count = !isPending && !isError ? String(data.count) : "";
 
     const waitingLine = count
-        ? `Currently in development — join the ${count} people waiting and help shape KiwiClient.`
-        : "Currently in development — join the waitlist and help shape KiwiClient.";
+        ? `Currently in development - join the ${count} people waiting and help shape KiwiClient.`
+        : "Currently in development - join the waitlist and help shape KiwiClient.";
 
     return (
         <div className="min-h-dvh lg:h-dvh flex flex-col lg:overflow-hidden px-6 sm:px-12 py-6 sm:py-8">
@@ -76,7 +76,7 @@ export default function WaitlistLanding() {
                             {outcome === "SUCCESS" && (
                                 <>
                                     <CheckIcon className="size-5 text-kiwi-success" />
-                                    <span className="text-sm">Thanks — you're on the list! We'll keep you updated.</span>
+                                    <span className="text-sm">Thanks - you're on the list! We'll keep you updated.</span>
                                 </>
                             )}
                             {outcome === "FAILURE" && (

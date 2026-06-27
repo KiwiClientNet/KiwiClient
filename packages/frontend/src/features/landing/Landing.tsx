@@ -69,8 +69,7 @@ export default function Landing() {
                     </h1>
 
                     <p className="mt-4 sm:mt-6 text-base sm:text-xl max-w-xl opacity-80 animate-kiwi-rise [animation-delay:450ms]">
-                        An open source email client made for your self-hosted mail
-                        server — built for speed, simplicity, and privacy.
+                        An open source email client made for your self-hosted mail server. Built for speed, simplicity, and privacy.
                     </p>
 
                     <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 animate-kiwi-rise [animation-delay:550ms]">
