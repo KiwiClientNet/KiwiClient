@@ -10,7 +10,7 @@
 import { useEffect, useRef, type MouseEvent } from "react";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
-import { FolderInput, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { SEEN_FLAG, FLAGGED_FLAG, type EmailGlance } from "@KiwiClient/shared";
 import { Checkbox } from "../../../components/Checkbox";
 import { useOnScreen } from "../../../hooks/useOnScreen";
@@ -71,6 +71,7 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
 
     // The trash hover action is hidden inside the trash folder itself, where
     // a move to the same mailbox would be meaningless.
+    // TODO: Factor out all the glance toolbar and item icons as they will be used in multiple places and need to perform the same actions
     const canMoveToTrash = specialTrashFolderPath !== undefined && specialTrashFolderPath !== emailGlance.mailboxPath;
 
     const handleTrashClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -86,10 +87,10 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
         onEmailsRemoved?.(new Set([emailGlance.uniqueId]));
     };
 
-    const handleMoveClick = (event: MouseEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        alert("Moving mail coming soon!");
-    };
+    // const handleMoveClick = (event: MouseEvent<HTMLButtonElement>) => {
+    //     event.stopPropagation();
+    //     alert("Moving mail coming soon!");
+    // };
 
     const isOpen = openEmail?.uniqueId === emailGlance.uniqueId && openEmail.mailboxPath === emailGlance.mailboxPath;
 
@@ -133,14 +134,15 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
                                     ? <StarIconSolid className="size-4 text-kiwi-warning" />
                                     : <StarIconOutline className="size-4 " />}
                             </button>
-                            <button
-                                type="button"
-                                title="Move mail to"
-                                onClick={handleMoveClick}
-                                className="kiwi-icon-btn rounded-md hover:text-kiwi-green hover:bg-kiwi-middle-black"
-                            >
-                                <FolderInput className="size-4" />
-                            </button>
+                            {/* TODO: Factor out the similar behaviour first before implementing  */}
+                            {/* <button */}
+                            {/*     type="button" */}
+                            {/*     title="Move mail to" */}
+                            {/*     onClick={handleMoveClick} */}
+                            {/*     className="kiwi-icon-btn rounded-md hover:text-kiwi-green hover:bg-kiwi-middle-black" */}
+                            {/* > */}
+                            {/*     <FolderInput className="size-4" /> */}
+                            {/* </button> */}
                             {canMoveToTrash && (
                                 <button
                                     type="button"

@@ -16,6 +16,9 @@ import { useMessageFlagsMutation } from "./useMessageFlagsMutation";
 import { useMessageMoveMutation } from "./useMessageMoveMutation";
 import { FolderInput, MailOpen, Trash2 } from "lucide-react";
 import UnreadMailIcon from "../../../components/UnreadMailIcon";
+import { Dropdown, DropdownItem } from "../../../components/Dropdown";
+import { useMailboxStore } from "../../../store/mailboxStore";
+import { getMailboxIcon } from "../sidebar/mailboxIcon";
 
 interface GlanceToolbarProps {
     selectedMailboxName: string;
@@ -40,11 +43,14 @@ export function GlanceToolbar({
 }: GlanceToolbarProps) {
     const flagsMutation = useMessageFlagsMutation({ mailboxPath: selectedMailboxPath });
     const moveMutation = useMessageMoveMutation();
+    const possibleMailboxPathsDestinations = useMailboxStore(state => state.possibleMailboxDestinations);
 
     const selectedUniqueIds = selectedGlances.map(glance => glance.uniqueId);
     const hasSelection = selectedUniqueIds.length > 0;
     const areAllSelectedRead = hasSelection && selectedGlances.every(glance => glance.flags.seen);
     const areAllSelectedStarred = hasSelection && selectedGlances.every(glance => glance.flags.flagged);
+
+    // TODO: Add toast messages for this section/actions 
 
     const toggleReadState = () => {
         if (!hasSelection) {
@@ -81,6 +87,37 @@ export function GlanceToolbar({
         clearGlanceSelection?.();
     };
 
+    const moveSelectionToSelectedFolder = (destinationPath: string) => {
+        // Purely frontend to stop the request going through, doesn't hurt if
+        // the request does go through but saves some confusion for the user
+        if (selectedMailboxPath === destinationPath) {
+            // TODO: Some alert here to the user
+            return;
+        }
+
+        if (!hasSelection) {
+            return;
+        }
+
+        moveMutation.mutate({
+            uniqueIds: selectedUniqueIds,
+            mailboxPathSource: selectedMailboxPath,
+            mailboxPathTarget: destinationPath
+        });
+        onEmailsRemoved?.(new Set(selectedUniqueIds));
+        clearGlanceSelection?.();
+    };
+
+    const dropDownItems = () => possibleMailboxPathsDestinations.map(destination => {
+        return <DropdownItem
+            key={destination.path.toString()}
+            depth={destination.depth}
+            onClickCallback={() => moveSelectionToSelectedFolder(destination.path)}
+        >
+            {getMailboxIcon(destination.name)}{destination.name}
+        </DropdownItem>
+    });
+
     return (
         <div className="kiwi-panel bg-kiwi-black shrink-0 mb-2 flex flex-row items-center gap-2 my-1 p-3 pl-4">
             <div className="flex justify-center px-2">
@@ -104,9 +141,13 @@ export function GlanceToolbar({
                         ? <StarIconOutline className="size-5" />
                         : <StarIconSolid className="size-5 text-kiwi-warning" />}
                 </ToolbarIconButton>
-                <ToolbarIconButton title="Move mail to" onClick={() => alert("Moving mail coming soon!")}>
-                    <FolderInput className="size-5" />
-                </ToolbarIconButton>
+                <Dropdown title={"Move to"} trigger={
+                    (<ToolbarIconButton title="Move mail to" onClick={() => {/* Do nothing: Handled by dropdown parent */ }}>
+                        <FolderInput className="size-5" />
+                    </ToolbarIconButton>)
+                }>
+                    {dropDownItems()}
+                </Dropdown>
                 {/* TODO: If in the bin/trash folder, do not need to show that the user can bin an item/ add a delete forever */}
                 <ToolbarIconButton title="Move to trash" onClick={moveSelectionToTrash} additionalStyles={["hover:text-kiwi-failure"]}>
                     <Trash2 className="size-5" />

@@ -33,16 +33,17 @@ The `main` branch is currently representative of what's hosted on [https://kiwic
 - And all the UI for these features 
 - UI handling of composing and sending emails 
 - Reply + reply-all + forward 
+- Moving mail to different folders
 
 ### Currently Being Developed
 
-- Moving mail to different folders
 - Drafts 
 
 ### Up next for Development
  
 - Attachments: receive and send
 - Search 
+- URLs for specific emails
 
 ### Future Stuff
 

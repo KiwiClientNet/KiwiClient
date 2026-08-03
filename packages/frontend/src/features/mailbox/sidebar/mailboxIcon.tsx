@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 const ICON_SIZE_CLASS = "size-5";
+const ATTRIBUTES = `${ICON_SIZE_CLASS} shrink-0`
 
 /**
  * @brief Returns the icon element matching the mailbox name.
@@ -31,26 +32,26 @@ export function getMailboxIcon(mailboxName: string): React.JSX.Element {
     const lowerCasedName = mailboxName.toLowerCase();
 
     if (lowerCasedName.includes("inbox")) {
-        return <InboxIcon className={ICON_SIZE_CLASS} />;
+        return <InboxIcon className={ATTRIBUTES} />;
     }
     if (lowerCasedName.includes("drafts")) {
-        return <DocumentTextIcon className={ICON_SIZE_CLASS} />;
+        return <DocumentTextIcon className={ATTRIBUTES} />;
     }
     if (lowerCasedName.includes("sent")) {
-        return <PaperAirplaneIcon className={ICON_SIZE_CLASS} />;
+        return <PaperAirplaneIcon className={ATTRIBUTES} />;
     }
     if (lowerCasedName.includes("archive")) {
-        return <ArchiveBoxIcon className={ICON_SIZE_CLASS} />;
+        return <ArchiveBoxIcon className={ATTRIBUTES} />;
     }
     if (lowerCasedName.includes("trash") || lowerCasedName.includes("bin") || lowerCasedName.includes("rubbish")) {
-        return <TrashIcon className={ICON_SIZE_CLASS} />;
+        return <TrashIcon className={ATTRIBUTES} />;
     }
     if (lowerCasedName.includes("starred")) {
-        return <StarIcon className={ICON_SIZE_CLASS} />;
+        return <StarIcon className={ATTRIBUTES} />;
     }
     if (lowerCasedName.includes("spam") || lowerCasedName.includes("junk")) {
-        return <ShieldExclamationIcon className={ICON_SIZE_CLASS} />;
+        return <ShieldExclamationIcon className={ATTRIBUTES} />;
     }
 
-    return <FolderIcon className={ICON_SIZE_CLASS} />;
+    return <FolderIcon className={ATTRIBUTES} />;
 }

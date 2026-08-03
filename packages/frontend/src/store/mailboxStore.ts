@@ -1,11 +1,16 @@
+import type { MailboxNamePathDepth } from "@KiwiClient/shared";
 import { create } from "zustand";
 
 interface MailboxStore {
     sentPath: string;
     setSentPath: (path: string) => void;
+    possibleMailboxDestinations: MailboxNamePathDepth[];
+    setPossibleMailboxDestinations: (mailboxes: MailboxNamePathDepth[]) => void;
 }
 
 export const useMailboxStore = create<MailboxStore>((set) => ({
     sentPath: "",
-    setSentPath: (path) => set({ sentPath: path }),
+    setSentPath: path => set({ sentPath: path }),
+    possibleMailboxDestinations: [],
+    setPossibleMailboxDestinations: mailboxes => set({ possibleMailboxDestinations: mailboxes })
 }));

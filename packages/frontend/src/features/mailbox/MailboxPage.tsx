@@ -25,6 +25,7 @@ import { useComposeEmailStore } from "../../store/composeEmailStore";
 import { useMailboxStore } from "../../store/mailboxStore";
 import { useSeo } from "../../hooks/useSeo";
 import { WelcomeMessage } from "./emailbox/WelcomeMessage";
+import type { MailboxNamePathDepth } from "@KiwiClient/shared";
 
 /**
  * @brief Picks a sensible default selection from the freshly-fetched tree.
@@ -51,6 +52,41 @@ function pickDefaultMailbox(mailboxTree: MailboxTreeNode[]): MailboxSelection | 
     return { name: firstRoot.mailbox.name, path: firstRoot.mailbox.path };
 }
 
+function getListOfMailboxMoveDestinations(mailboxTree: MailboxTreeNode[], currentSelectionPath: string): MailboxNamePathDepth[] {
+
+    if (mailboxTree.length === 0) {
+        return [];
+    }
+
+    let mailboxList: MailboxNamePathDepth[] = [];
+    let depth = 0
+
+    let childTraversal = (node: MailboxTreeNode) => {
+        // Stops the user from being able to send to the mailbox it's currently
+        // in but if it's a folder with children we should show it anyway for
+        // clarity of subfolders
+        if (node.mailbox.path !== currentSelectionPath || node.children.length > 0) {
+            mailboxList.push({ path: node.mailbox.path, name: node.mailbox.name, depth: depth });
+        }
+
+        if (node.children.length === 0) {
+            return;
+        }
+
+        depth++;
+        for (let child of node.children) {
+            childTraversal(child);
+        }
+        depth--;
+    }
+
+    for (let mailboxRoot of mailboxTree) {
+        childTraversal(mailboxRoot);
+    }
+
+    return mailboxList;
+}
+
 export function MailboxPage() {
     const { authFetch } = useContext(AuthContext);
     const [selectedMailbox, setSelectedMailbox] = useState<MailboxSelection | null>(null);
@@ -61,6 +97,7 @@ export function MailboxPage() {
     const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined); // TODO: Probably should update this to use with zustand too
     const setSentPath = useMailboxStore(state => state.setSentPath);
     const setHidden = useComposeEmailStore(state => state.setHidden);
+    const setPossibleMailboxPathsDestinations = useMailboxStore(state => state.setPossibleMailboxDestinations);
 
     useSeo({
         title: "KiwiClient Mailbox",
@@ -78,6 +115,7 @@ export function MailboxPage() {
             return;
         }
         setSelectedMailbox(pickDefaultMailbox(mailboxTree));
+        setPossibleMailboxPathsDestinations(getListOfMailboxMoveDestinations(mailboxTree, pickDefaultMailbox(mailboxTree)?.path ?? ""));
     }, [mailboxTree, selectedMailbox]);
 
     useEffect(() => {
@@ -89,6 +127,7 @@ export function MailboxPage() {
     const handleSelectMailbox = (selection: MailboxSelection) => {
         setSelectedMailbox(selection);
         setIsSidebarOpen(false);
+        setPossibleMailboxPathsDestinations(getListOfMailboxMoveDestinations(mailboxTree, selection.path));
         setMobileView("glance");
     };
 
@@ -159,7 +198,7 @@ export function MailboxPage() {
                         <Glance selectedMailbox={selectedMailbox} specialTrashFolderPath={specialTrashFolderPath} />
                     </div>
                     <div className={`${mobileView === "email" ? "flex" : "hidden"} lg:flex flex-col flex-1 min-h-0`}>
-                        <div className="h-full w-full rounded-none lg:rounded-2xl bg-kiwi-black p-2 flex flex-col min-h-0">
+                        <div className="h-full w-full rounded-none md:rounded-2xl md:ml-2 md:mt-2 lg:ml-0 lg:mt-0 bg-kiwi-black p-2 flex flex-col min-h-0">
                             <div className="flex-1 min-h-0 rounded-xl flex items-center justify-center overflow-auto kiwi-scrollbar">
                                 {selectedEmail ? <Emailbox onBack={handleBackToGlance} /> : <WelcomeMessage />}
                             </div>

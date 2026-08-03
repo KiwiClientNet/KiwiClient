@@ -67,16 +67,29 @@ export const EmailMessageSchema = EmailGlanceSchema.extend({
     text: z.string().optional()
 });
 
-/**
- * @brief A single mailbox folder as exposed by the IMAP server.
+/** 
+ * @brief Mailbox name and path.
  *
- * The path is the IMAP-native identifier; the name is the display label.
- * The parent path is absent for top-level mailboxes and used to reconstruct
- * the folder tree on the frontend.
+ * The path will always uniquely identify the mailbox
  */
-export const MailboxSchema = z.object({
+export const MailboxNamePathSchema = z.object({
     path: z.string(),
     name: z.string(),
+})
+
+/** 
+ * @brief Mailbox name and path.
+ *
+ * The path will always uniquely identify the mailbox
+ */
+export const MailboxNamePathDepthSchema = MailboxNamePathSchema.extend({
+    depth: z.number()
+})
+
+/**
+ * @brief A single mailbox folder as exposed by the IMAP server.
+ */
+export const MailboxSchema = MailboxNamePathSchema.extend({
     parentPath: z.string().optional(),
     specialUse: z.string().optional(),
     flags: z.array(z.string()),
@@ -103,4 +116,6 @@ export type EmailFlags = z.infer<typeof EmailFlagsSchema>;
 export type EmailGlance = z.infer<typeof EmailGlanceSchema>;
 export type EmailMessage = z.infer<typeof EmailMessageSchema>;
 export type EmailToSend = z.infer<typeof EmailToSendSchema>;
+export type MailboxNamePath = z.infer<typeof MailboxNamePathSchema>;
+export type MailboxNamePathDepth = z.infer<typeof MailboxNamePathDepthSchema>;
 export type Mailbox = z.infer<typeof MailboxSchema>;
