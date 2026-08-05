@@ -151,7 +151,6 @@ const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
 
     return (
         <div className="flex flex-1 flex-col gap-2 min-h-0 overflow-y-clip">
-            <MenuBar editor={editor} />
             <EditorContent
                 editor={editor}
                 className={
@@ -170,6 +169,7 @@ const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
                     'hover:[&_.ProseMirror_a]:decoration-kiwi-info'
                 }
             />
+            <MenuBar editor={editor} />
         </div>
     )
 

@@ -110,7 +110,7 @@ function SidebarTreeNode({ node, selectedMailboxPath, onSelectMailbox }: Sidebar
     if (!hasChildren) {
         return (
             <SidebarItem
-                mailboxName={node.mailbox.name}
+                mailbox={{ name: node.mailbox.name, path: node.mailbox.path }}
                 unSeenEmails={node.mailbox.unseen}
                 isSelected={isSelected}
                 isChildrenVisible={isExpanded}
@@ -124,7 +124,7 @@ function SidebarTreeNode({ node, selectedMailboxPath, onSelectMailbox }: Sidebar
     return (
         <>
             <SidebarItem
-                mailboxName={node.mailbox.name}
+                mailbox={{ name: node.mailbox.name, path: node.mailbox.path }}
                 unSeenEmails={node.mailbox.unseen}
                 isSelected={isSelected}
                 isChildrenVisible={isExpanded}

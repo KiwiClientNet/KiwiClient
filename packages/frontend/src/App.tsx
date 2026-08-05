@@ -43,7 +43,7 @@ export function App() {
             <Route element={<AuthLayout />}>
                 <Route path="/login" element={<LoginPage />} />
                 <Route
-                    path="/mail"
+                    path="/mail/*"
                     element={
                         <ProtectedRoute>
                             <MailboxPage />
@@ -51,6 +51,6 @@ export function App() {
                     }
                 />
             </Route>
-        </Routes>
+        </Routes >
     );
 }

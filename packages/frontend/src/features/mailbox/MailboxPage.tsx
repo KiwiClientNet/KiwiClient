@@ -6,7 +6,7 @@
  * and emit selection changes back through a callback.
  */
 
-import { useCallback, useEffect, useState, useContext } from "react";
+import { useCallback, useEffect, useState, useContext, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Bars3Icon, MagnifyingGlassIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { AuthContext } from "../../auth/AuthContext";
@@ -23,9 +23,10 @@ import { mailboxesQueryKey } from "./queryKeys";
 import ComposeBox from "./compose/ComposeBox";
 import { useComposeEmailStore } from "../../store/composeEmailStore";
 import { useMailboxStore } from "../../store/mailboxStore";
-import { useSeo } from "../../hooks/useSeo";
 import { WelcomeMessage } from "./emailbox/WelcomeMessage";
 import type { MailboxNamePathDepth } from "@KiwiClient/shared";
+import { Navigate, useParams } from "react-router-dom";
+import { findMailboxBySlug, mailboxPathToSlug } from "./mailboxRouting";
 
 /**
  * @brief Picks a sensible default selection from the freshly-fetched tree.
@@ -89,7 +90,6 @@ function getListOfMailboxMoveDestinations(mailboxTree: MailboxTreeNode[], curren
 
 export function MailboxPage() {
     const { authFetch } = useContext(AuthContext);
-    const [selectedMailbox, setSelectedMailbox] = useState<MailboxSelection | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [mobileView, setMobileView] = useState<"glance" | "email">("glance");
     const selectedEmail = useSelectedEmailStore(state => state.selected);
@@ -98,25 +98,29 @@ export function MailboxPage() {
     const setSentPath = useMailboxStore(state => state.setSentPath);
     const setHidden = useComposeEmailStore(state => state.setHidden);
     const setPossibleMailboxPathsDestinations = useMailboxStore(state => state.setPossibleMailboxDestinations);
-
-    useSeo({
-        title: "KiwiClient Mailbox",
-        description: "The KiwiClient Mailbox"
-    });
-
+    const { "*": mailboxSlug } = useParams();
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: mailboxesQueryKey(),
         queryFn: ({ signal }) => fetchMailboxes(authFetch, signal),
         select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath, setSentPath), [])
     });
+    const selectedMailbox = useMemo(() => {
+
+        if (!mailboxSlug || mailboxTree.length === 0) {
+            return null;
+        }
+
+        return findMailboxBySlug(mailboxTree, mailboxSlug);
+
+    }, [mailboxSlug, mailboxTree]);
+
+    const moveDestiinations = useMemo(() => {
+        return selectedMailbox ? getListOfMailboxMoveDestinations(mailboxTree, selectedMailbox.path) : [];
+    }, [mailboxTree, selectedMailbox])
 
     useEffect(() => {
-        if (selectedMailbox !== null || mailboxTree.length === 0) {
-            return;
-        }
-        setSelectedMailbox(pickDefaultMailbox(mailboxTree));
-        setPossibleMailboxPathsDestinations(getListOfMailboxMoveDestinations(mailboxTree, pickDefaultMailbox(mailboxTree)?.path ?? ""));
-    }, [mailboxTree, selectedMailbox]);
+        setPossibleMailboxPathsDestinations(moveDestiinations);
+    }, [moveDestiinations]);
 
     useEffect(() => {
         if (selectedEmail) {
@@ -124,10 +128,9 @@ export function MailboxPage() {
         }
     }, [selectedEmail]);
 
-    const handleSelectMailbox = (selection: MailboxSelection) => {
-        setSelectedMailbox(selection);
+    const handleSelectMailbox = () => {
+        clearSelectedEmail();
         setIsSidebarOpen(false);
-        setPossibleMailboxPathsDestinations(getListOfMailboxMoveDestinations(mailboxTree, selection.path));
         setMobileView("glance");
     };
 
@@ -148,8 +151,18 @@ export function MailboxPage() {
         return <MailboxPageLoading Status={<StatusComponent message="No mailboxes found" status="info" />} />;
     }
 
-    if (selectedMailbox === null) {
-        return <MailboxPageLoading Status={<StatusComponent message="loading..." status="loading" />} />;
+    const defaultMailbox = pickDefaultMailbox(mailboxTree);
+
+    if (!mailboxSlug && defaultMailbox) {
+        return <Navigate to={`/mail/${mailboxPathToSlug(defaultMailbox.path)}`} replace />;
+    }
+
+    if (mailboxSlug && !selectedMailbox && defaultMailbox) {
+        return <Navigate to={`/mail/${mailboxPathToSlug(defaultMailbox.path)}`} replace />;
+    }
+
+    if (!selectedMailbox) {
+        return <MailboxPageLoading Status={<StatusComponent message={"Something went wrong! No mailbox selected"} status="error" />} />;
     }
 
     return (
@@ -175,9 +188,8 @@ export function MailboxPage() {
                     <span className="font-bold truncate">{selectedMailbox.name}<span className="text-kiwi-green">.</span></span>
                 </header>
 
-                {/* Temporary search field. It is a real, focusable input so the header
-                    reads as finished, but it has no submit handler yet — message search
-                    is wired up once the backend search endpoint lands. */}
+                {/* Temporary search field. It is a real, focus-able input so the header
+                    reads as finished, but it has no submit handler yet. */}
                 <div className="hidden md:block m-3 mb-0">
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-kiwi-middle-grey">

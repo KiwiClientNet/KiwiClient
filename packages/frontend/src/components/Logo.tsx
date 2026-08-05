@@ -21,7 +21,7 @@ export default function Logo({ className = "w-50 h-50", link = true, linkTo = "/
     const baseImage = (
         <img
             src={reverseLogo ? reverseLogoImage : logoImage}
-            alt="The KiwiClient logo - a black kiwi bird"
+            alt="The KiwiClient logo"
             className={className}
             loading="lazy"
             decoding="async"

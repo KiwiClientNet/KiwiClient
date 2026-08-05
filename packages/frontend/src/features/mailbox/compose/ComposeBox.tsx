@@ -14,6 +14,10 @@ import { useMailboxStore } from "../../../store/mailboxStore";
 
 export type NewEmailComposeType = 'new' | 'reply' | 'reply_all' | 'forward';
 
+function initialiseDraft(): void {
+    console.log("Draft initialised");
+}
+
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
     const [minimized, setMinimized] = useState<boolean>(false);
@@ -28,13 +32,6 @@ export default function ComposeBox() {
     const sentPath = useMailboxStore(state => state.sentPath);
     const setFormRef = useComposeEmailStore(state => state.setFormRef);
     const setEditorRef = useComposeEmailStore(state => state.setEditorRef);
-
-    // const [editing, setEditing] = useState(false);
-
-    // useEffect(() => {
-    //     // Draft functionality?
-    //
-    // }, [editing]);
 
     function handleClosingComposeBox(event: React.MouseEvent<SVGSVGElement, MouseEvent>): void {
         event.stopPropagation();
@@ -80,7 +77,7 @@ export default function ComposeBox() {
             formRef.current?.clearDraft();
             editorRef.current?.clearEditor();
 
-            // TODO: Also make it obvious to the user that the mail is sending with an alert or notfication as well as the status bar?
+            // TODO: Also make it obvious to the user that the mail is sending with an alert or notification as well as the status bar?
             setMessage("Message sent!", "success", 3000);
 
             queryClient.invalidateQueries({ queryKey: glanceQueryKey(sentPath) });
@@ -98,10 +95,6 @@ export default function ComposeBox() {
 
         return false;
     }
-
-    useEffect(() => {
-        return () => setHidden(true);
-    }, [])
 
     useEffect(() => {
         setFormRef(formRef.current);
@@ -147,10 +140,12 @@ export default function ComposeBox() {
                     />
                 </div>
             </header>
-            <MessageForm setComposeBoxTitle={setComposeBoxTitle} ref={formRef} />
-            <div className={minimized ? "invisible" : "flex min-h-0 flex-1 flex-col overflow-y-auto p-4"}>
-                <EmailEditor ref={editorRef} />
-            </div>
+            <span className="flex flex-col flex-1" onInput={initialiseDraft}>
+                <MessageForm setComposeBoxTitle={setComposeBoxTitle} ref={formRef} />
+                <div className={minimized ? "invisible" : "flex min-h-0 flex-1 flex-col overflow-y-auto p-4"}>
+                    <EmailEditor ref={editorRef} />
+                </div>
+            </span>
             {!minimized && <Footer sendEmail={handleSend} />}
         </section>
     );

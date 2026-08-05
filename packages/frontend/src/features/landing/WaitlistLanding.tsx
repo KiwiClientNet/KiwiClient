@@ -5,19 +5,12 @@ import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import Logo from "../../components/Logo";
 import LandingSignup, { type WaitlistOutcome } from "./LandingSignup";
 import { Slideshow } from "./Slideshow";
-import { useSeo } from "../../hooks/useSeo";
 import ViewOnGitHub from "../../components/ViewOnGitHub";
 
 const MANIFESTO_LINES = ["Your server", "Your client", "Your email"];
 
 export default function WaitlistLanding() {
     const [outcome, setOutcome] = useState<WaitlistOutcome>("IDLE");
-
-    useSeo({
-        title: "KiwiClient | Free, Open Source Email Client",
-        description: "Kiwi Client is a fast, private, free and open source email client for your self-hosted mail server, with Gmail and Outlook support on the way. Join the waitlist.",
-        canonicalPath: "/"
-    });
 
     const { data, isPending, isError } = useQuery({
         queryKey: ["waitlistCount"],
