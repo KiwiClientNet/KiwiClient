@@ -7,7 +7,7 @@ import LandingSignup, { type WaitlistOutcome } from "./LandingSignup";
 import { Slideshow } from "./Slideshow";
 import ViewOnGitHub from "../../components/ViewOnGitHub";
 
-const MANIFESTO_LINES = ["Your server", "Your client", "Your email"];
+const MANIFESTO_LINES = ["Webmail made yours"];
 
 export default function WaitlistLanding() {
     const [outcome, setOutcome] = useState<WaitlistOutcome>("IDLE");
@@ -20,8 +20,8 @@ export default function WaitlistLanding() {
     const count = !isPending && !isError ? String(data.count) : "";
 
     const waitingLine = count
-        ? `Currently in development - join the ${count} people waiting and help shape KiwiClient.`
-        : "Currently in development - join the waitlist and help shape KiwiClient.";
+        ? `Currently in development, join the ${count} people waiting and help shape KiwiClient.`
+        : "Currently in development, join the waitlist and help shape KiwiClient.";
 
     return (
         <div className="min-h-dvh lg:h-dvh flex flex-col lg:overflow-hidden px-6 sm:px-12 py-6 sm:py-8">
@@ -51,8 +51,7 @@ export default function WaitlistLanding() {
                     </h1>
 
                     <p className="mt-4 text-base sm:text-lg max-w-md opacity-80 animate-kiwi-rise [animation-delay:450ms]">
-                        A fast, private email client built for your self-hosted mail server.
-                        Gmail and Outlook support are on the way.
+                        A simple, private, and open source email client built for your self-hosted mail server. Access your email server, Gmail, or Outlook.
                     </p>
 
                     <p className="mt-3 text-sm opacity-60 max-w-md animate-kiwi-rise [animation-delay:550ms]">
@@ -69,7 +68,7 @@ export default function WaitlistLanding() {
                             {outcome === "SUCCESS" && (
                                 <>
                                     <CheckIcon className="size-5 text-kiwi-success" />
-                                    <span className="text-sm">Thanks - you're on the list! We'll keep you updated.</span>
+                                    <span className="text-sm">Thanks, you're on the list! Check your email 👀</span>
                                 </>
                             )}
                             {outcome === "FAILURE" && (

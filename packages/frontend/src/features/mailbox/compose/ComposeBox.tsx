@@ -5,7 +5,7 @@ import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import EmailEditor, { type EmailEditorHandle } from "./EmailEditor";
 import MessageForm, { type MessageFormHandle } from "./MessageForm";
 import { Button } from "../../../components/Button";
-import { type EmailToSend, type EmailToSendResponse } from "@KiwiClient/shared";
+import { type EmailToDraft, type EmailToSend, type EmailToSendResponse } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
 import { useToastStore } from "../../../store/toastStore";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,6 +30,7 @@ export default function ComposeBox() {
     const setMessage = useToastStore(state => state.setMessage);
     const [composeBoxTitle, setComposeBoxTitle] = useState("New message");
     const sentPath = useMailboxStore(state => state.sentPath);
+    const specialDraftFolderPath = useMailboxStore(state => state.specialDraftFolderPath);
     const setFormRef = useComposeEmailStore(state => state.setFormRef);
     const setEditorRef = useComposeEmailStore(state => state.setEditorRef);
 

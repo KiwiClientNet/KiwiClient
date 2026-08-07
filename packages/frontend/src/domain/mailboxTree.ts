@@ -44,7 +44,11 @@ function formatMailboxName(rawName: string): string {
  * @param mailboxes - The flat list of mailboxes from the API.
  * @returns The roots of every tree in the forest.
  */
-export function buildMailboxTree(mailboxes: Mailbox[], setSpecialTrashFolderPath: (path: string) => void, setSentPath: (path: string) => void): MailboxTreeNode[] {
+export function buildMailboxTree(mailboxes: Mailbox[],
+    setSpecialTrashFolderPath: (path: string) => void,
+    setSentPath: (path: string) => void,
+    setSpecialDraftFolderPath: (path: string) => void
+): MailboxTreeNode[] {
     const nodeByPath = new Map<string, MailboxTreeNode>();
 
     for (const mailbox of mailboxes) {
@@ -54,6 +58,9 @@ export function buildMailboxTree(mailboxes: Mailbox[], setSpecialTrashFolderPath
         }
         else if (displayMailbox.specialUse === "\\Sent") {
             setSentPath(displayMailbox.path);
+        }
+        else if (displayMailbox.specialUse === "\\Drafts") {
+            setSpecialDraftFolderPath(displayMailbox.path);
         }
         nodeByPath.set(mailbox.path, { mailbox: displayMailbox, children: [] });
     }

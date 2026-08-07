@@ -16,7 +16,7 @@ interface ComingSoonProps {
 
 export default function ComingSoon({ title, description }: ComingSoonProps) {
     return (
-        <div className="min-h-dvh flex flex-col items-center justify-center text-center px-6 gap-4">
+        <div className="min-h-dvh flex flex-col items-center justify-center text-center px-6 gap-3">
             <Logo className="w-24 h-24" reverseLogo={true} />
             <h1 className="text-4xl sm:text-5xl font-bold animate-kiwi-rise">
                 {title}<span className="text-kiwi-green">.</span>
@@ -29,7 +29,7 @@ export default function ComingSoon({ title, description }: ComingSoonProps) {
             </span>
             <Link
                 to="/"
-                className="mt-4 no-underline font-bold border border-kiwi-light-black px-6 py-3 rounded-xl hover:border-kiwi-middle-grey hover:text-kiwi-white transition-colors duration-200 animate-kiwi-rise [animation-delay:400ms]"
+                className="mt-2 no-underline font-bold border border-kiwi-light-black px-6 py-3 rounded-xl hover:border-kiwi-middle-grey hover:text-kiwi-white transition-colors duration-200 animate-kiwi-rise [animation-delay:400ms]"
             >
                 Back to home
             </Link>

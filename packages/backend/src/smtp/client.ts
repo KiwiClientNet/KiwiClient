@@ -7,7 +7,7 @@
  * pool can manage SMTP and IMAP clients through the same interface.
  */
 
-import { DEFAULT_SMTP_PORT, EmailMessage, EmailToSend, type GoogleLoginBody, type ServerLoginBody } from "@KiwiClient/shared";
+import { DEFAULT_SMTP_PORT, EmailBody, EmailMessage, EmailToSend, type GoogleLoginBody, type ServerLoginBody } from "@KiwiClient/shared";
 import nodemailer, { type Transporter } from "nodemailer";
 import MailComposer from "nodemailer/lib/mail-composer/index.js";
 import type SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
@@ -96,7 +96,7 @@ export class SmtpInstance extends AbstractClient<Transporter> {
      * @param message - The message to convert
      * @returns The flattened Mail.Options type
      */
-    private _flattenEmailToSend(message: EmailToSend): Mail.Options {
+    private _flattenEmailToSend(message: EmailBody): Mail.Options {
         return ({
             from: `${message.from.name} <${message.from.address}>`,
             to: message.to.map(person => person.address).join(", "),
@@ -185,7 +185,7 @@ export class SmtpInstance extends AbstractClient<Transporter> {
         }
     }
 
-    compileEmail(message: EmailToSend): MimeNode {
+    compileEmail(message: EmailBody): MimeNode {
         const mail = new MailComposer(this._flattenEmailToSend(message));
         return mail.compile();
     }

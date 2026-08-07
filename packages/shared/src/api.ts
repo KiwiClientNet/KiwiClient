@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { EmailGlanceSchema, EmailMessageSchema, EmailToSendSchema, MailboxSchema } from './email.js';
+import { EmailGlanceSchema, EmailMessageSchema, EmailToSendSchema, EmailUidSchema, MailboxSchema } from './email.js';
 
 /**
  * @brief Stable error codes for client-side switching.
@@ -72,6 +72,7 @@ export const GlancePageResponseSchema = apiResult(GlancePageSchema);
 export const EmailMessageResponseSchema = apiResult(EmailMessageSchema);
 export const EmailMessagesResponseSchema = apiResult(z.array(EmailMessageSchema));
 export const EmailToSendResponseSchema = apiResult(EmailToSendSchema);
+export const EmailUidResponseSchema = apiResult(EmailUidSchema);
 export const EmptyResponseSchema = apiResult(z.object({}));
 
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
@@ -82,4 +83,5 @@ export type GlancePageResponse = z.infer<typeof GlancePageResponseSchema>;
 export type EmailMessageResponse = z.infer<typeof EmailMessageResponseSchema>;
 export type EmailMessagesResponse = z.infer<typeof EmailMessagesResponseSchema>;
 export type EmailToSendResponse = z.infer<typeof EmailToSendResponseSchema>;
+export type EmailUidResponse = z.infer<typeof EmailUidResponseSchema>;
 export type EmptyResponse = z.infer<typeof EmptyResponseSchema>;

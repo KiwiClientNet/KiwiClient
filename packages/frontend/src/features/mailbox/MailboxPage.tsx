@@ -98,11 +98,12 @@ export function MailboxPage() {
     const setSentPath = useMailboxStore(state => state.setSentPath);
     const setHidden = useComposeEmailStore(state => state.setHidden);
     const setPossibleMailboxPathsDestinations = useMailboxStore(state => state.setPossibleMailboxDestinations);
+    const setSpecialDraftFolderPath = useMailboxStore(state => state.setSpecialDraftFolderPath);
     const { "*": mailboxSlug } = useParams();
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: mailboxesQueryKey(),
         queryFn: ({ signal }) => fetchMailboxes(authFetch, signal),
-        select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath, setSentPath), [])
+        select: useCallback((mailboxes: Awaited<ReturnType<typeof fetchMailboxes>>) => buildMailboxTree(mailboxes, setSpecialTrashFolderPath, setSentPath, setSpecialDraftFolderPath), [])
     });
     const selectedMailbox = useMemo(() => {
 

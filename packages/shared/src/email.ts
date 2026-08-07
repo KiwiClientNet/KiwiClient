@@ -57,6 +57,8 @@ export const EmailGlanceSchema = z.object({
  *
  * Extends EmailGlance so that any consumer with an EmailMessage can also use
  * it everywhere an EmailGlance is expected.
+ *
+ * TODO: I'm repeating some code here with types
  */
 export const EmailMessageSchema = EmailGlanceSchema.extend({
     to: z.array(EmailAddressSchema),
@@ -97,9 +99,10 @@ export const MailboxSchema = MailboxNamePathSchema.extend({
     unseen: z.number()
 });
 
-/** @brief Schema for sending a an email message
- * */
-export const EmailToSendSchema = z.object({
+/** 
+ * @brief General Email body which is sent to a draft and eventually the sent mail
+ */
+export const EmailBodySchema = z.object({
     from: EmailAddressSchema,
     to: z.array(EmailAddressSchema),
     cc: z.array(EmailAddressSchema),
@@ -108,14 +111,33 @@ export const EmailToSendSchema = z.object({
     subject: z.string(),
     html: z.string().optional(),
     text: z.string().optional(),
-    sentFolder: z.string(),
+});
+
+/** 
+ * @brief Schema for sending a an email message
+ */
+export const EmailToSendSchema = EmailBodySchema.extend({
+    sentFolder: z.string()
+});
+
+/** 
+ * @brief Schema for draftinging a an email message
+ */
+export const EmailToDraftSchema = EmailBodySchema.extend({
+    draftFolder: z.string()
+});
+
+export const EmailUidSchema = z.object({
+    uid: Number
 });
 
 export type EmailAddress = z.infer<typeof EmailAddressSchema>;
 export type EmailFlags = z.infer<typeof EmailFlagsSchema>;
 export type EmailGlance = z.infer<typeof EmailGlanceSchema>;
 export type EmailMessage = z.infer<typeof EmailMessageSchema>;
+export type EmailBody = z.infer<typeof EmailBodySchema>;
 export type EmailToSend = z.infer<typeof EmailToSendSchema>;
+export type EmailToDraft = z.infer<typeof EmailToDraftSchema>;
 export type MailboxNamePath = z.infer<typeof MailboxNamePathSchema>;
 export type MailboxNamePathDepth = z.infer<typeof MailboxNamePathDepthSchema>;
 export type Mailbox = z.infer<typeof MailboxSchema>;

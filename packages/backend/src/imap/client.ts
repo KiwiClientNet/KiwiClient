@@ -676,27 +676,30 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
         }
     }
 
-    async addRawMimeToMailbox(mime: MimeNode, mailboxPath: string, messageFlags?: string[]): Promise<boolean> {
+    async addRawMimeToMailbox(mime: MimeNode, mailboxPath: string, messageFlags?: string[]): Promise<Number> {
         assert(mailboxPath.length !== 0, "A mailbox must be specified");
+        const ERROR = -1;
 
         if (!this._client || !this._isAuthenticated()) {
-            return false;
+            return ERROR;
         }
 
         const mailboxLock = await this._client.getMailboxLock(mailboxPath);
+        let returnUid: Number;
 
         try {
             const mimeBuffer = await mime.build();
-            const result = await this._client.append(mailboxPath, mimeBuffer, messageFlags)
+            const result = await this._client.append(mailboxPath, mimeBuffer, messageFlags);
             if (!result) {
-                return false;
+                return ERROR;
             }
+            returnUid = result.uid ?? ERROR;
         } catch {
-            return false;
+            return ERROR;
         }
         finally {
             mailboxLock.release();
         }
-        return true;
+        return returnUid;
     }
 }

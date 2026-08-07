@@ -18,14 +18,17 @@ import {
     MessageMoveUpdateSchema,
     MessageMoveUpdate,
     EmailToSend,
-    EmailToSendSchema
+    EmailToSendSchema,
+    EmailToDraft,
+    EmailToDraftSchema,
+    EmailUidResponse
 } from "@KiwiClient/shared";
 import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool, smtpPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { respondIfCredentialsRejected } from "../utils/status.js";
-import { sendRateLimiter } from "../middleware/rateLimiter.js";
+import { draftRateLimiter, sendRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -292,14 +295,20 @@ router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, E
             }
 
             // Can compile the message and add to the IMAP server so it appears in the sent folder
-            const messageMime = smtpInstance.compileEmail(emailToSendParseResult.data);
+            const { sentFolder: _, ...emailToSendBody } = emailToSendParseResult.data as EmailToSend;
+            const messageMime = smtpInstance.compileEmail(emailToSendBody);
+
             // Google seems to already add the sent email to the folder for you? 
-            if (loginBody.serverType !== "GMAIL") {
-                const addedToSent = await imapInstance.addRawMimeToMailbox(messageMime, emailToSendParseResult.data.sentFolder, ["\\Seen"]);
-                if (!addedToSent) {
-                    response.status(500).json({ success: false, code: "IMAP_COULD_NOT_MOVE_MESSAGE", message: "Server failed to add message to the sent folder" });
-                    return;
-                }
+            if (loginBody.serverType === "GMAIL") {
+                response.json({ success: true, data: {} });
+                return;
+            }
+
+            const addedToSent = await imapInstance.addRawMimeToMailbox(messageMime, emailToSendParseResult.data.sentFolder, ["\\Seen"]);
+            // HACK: -1 is an error here but should get rid of the magic number
+            if (addedToSent === -1) {
+                response.status(500).json({ success: false, code: "IMAP_COULD_NOT_MOVE_MESSAGE", message: "Server failed to add message to the sent folder" });
+                return;
             }
 
             response.json({ success: true, data: {} });
@@ -317,5 +326,62 @@ router.post("/messages/send", sendRateLimiter, async (request: Request<{}, {}, E
     }
 
 });
+
+// Three methods here for drafts, the first is a POST method which creates a new draft, which then returns to the user a UID of that draft 
+router.post("/messages/draft", draftRateLimiter, async (request: Request<{}, {}, EmailToDraft>, response: Response<EmailUidResponse>) => {
+
+    // Get the email to draft the request
+    const emailToDraftParseResult = EmailToDraftSchema.safeParse(request.body);
+
+    if (!emailToDraftParseResult.success) {
+        response.status(400).json({
+            success: false,
+            code: "SMTP_MESSAGE_INVALID",
+            message: emailToDraftParseResult.error.message
+        })
+        return;
+    }
+
+    const tokenPayload = response.locals.user as TokenPayload;
+
+    try {
+        const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
+        const imapInstance = await imapPool.acquire(loginBody);
+        const smtpInstance = await smtpPool.acquire(loginBody);
+
+        try {
+            // Compile the message and add to the IMAP server so it appears in the draft folder
+            const messageMime = smtpInstance.compileEmail(emailToDraftParseResult.data);
+
+            // TODO: Check: Google seems to already add the draft email to the folder for you? 
+            // TODO: Also this means that I need to get the uid of the email and delete from the draft if gmail doesn't do this for you
+            if (loginBody.serverType === "GMAIL") {
+                response.json({ success: true, data: { uid: 1 } });
+                return;
+            }
+
+            const uid = await imapInstance.addRawMimeToMailbox(messageMime, emailToDraftParseResult.data.draftFolder, ["\\Draft", "\\Seen"]);
+            if (uid === -1) {
+                response.status(500).json({ success: false, code: "IMAP_COULD_NOT_MOVE_MESSAGE", message: "Server failed to add message to the draft folder" });
+                return;
+            }
+
+            response.json({ success: true, data: { uid: uid } });
+        } finally {
+            smtpPool.release(loginBody);
+            imapPool.release(loginBody);
+        }
+
+    } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
+        console.error(thrownError);
+        response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to draft message" });
+    }
+});
+
+// Then another one is a PATCH method for updating the draft using the UID returned, the uid 
+// Finally, a delete method if the user decides to send the draft
 
 export default router;

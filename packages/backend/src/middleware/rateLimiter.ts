@@ -40,6 +40,18 @@ export const sendRateLimiter = rateLimit({
 });
 
 /**
+ * @brief // TODO:Figure out a good rate limit
+ *
+ */
+export const draftRateLimiter = rateLimit({
+    windowMs: ONE_MINUTE_MS,
+    limit: 4,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { success: false, code: "IMAP_DRAFT_UPDATED_TOO_OFTEN", message: "Too many requests to update the draft, please try again shortly" }
+});
+
+/**
  * @brief Higher ceiling for refresh because a single browsing session triggers many.
  *
  * Refresh tokens are httpOnly cookies and not user-typed, so brute force is

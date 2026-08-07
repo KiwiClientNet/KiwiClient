@@ -5,30 +5,22 @@
 
 import { Link } from "react-router-dom";
 import Logo from "../../components/Logo";
-import reverseLogoImage from "../../assets/logos/kiwi-logo-white.svg";
 
-const MANIFESTO_LINES = ["Your server", "Your client", "Your email"];
+const MANIFESTO_LINES = ["Webmail made yours"];
 
 const FEATURE_POINTS = [
     { title: "Open Source", detail: "Every line of code is public and auditable" },
     { title: "No Tracking", detail: "Your mail is read by you and nobody else" },
-    { title: "Lightweight & Fast", detail: "Built to feel instant, even on slow days" }
+    { title: "Lightweight & Fast", detail: "Built for speed and not for tracking" }
 ];
 
 export default function Landing() {
     return (
-        <div className="relative h-dvh flex flex-col overflow-hidden">
-            <img
-                src={reverseLogoImage}
-                alt=""
-                aria-hidden="true"
-                className="absolute -right-40 -bottom-40 w-176 opacity-5 -rotate-12 pointer-events-none select-none"
-            />
-
+        <div className="relative flex h-dvh flex-col overflow-y-scroll overflow-x-hidden kiwi-scrollbar">
             <header className="flex items-center justify-between px-6 sm:px-12 py-3 sm:py-4">
                 <Link to="/" className="flex items-center gap-2 no-underline hover:text-kiwi-white">
                     <Logo className="w-11 h-11" link={false} reverseLogo={true} />
-                    <span className="font-bold text-lg">KiwiClient</span>
+                    <span className="font-bold text-lg hidden sm:block">KiwiClient</span>
                 </Link>
 
                 <nav className="flex items-center gap-5 sm:gap-8">
@@ -43,8 +35,9 @@ export default function Landing() {
                 </nav>
             </header>
 
-            <main className="flex-1 min-h-0 grid place-items-center px-6 sm:px-12 py-4 sm:py-10">
+            <main className="flex-1 min-h-0 grid place-items-start sm:place-items-center px-6 sm:px-12 py-4 sm:py-10">
                 <section className="max-w-3xl w-full">
+                    <span className="font-bold text-lg sm:hidden">KiwiClient</span>
                     <p className="text-kiwi-green font-bold tracking-[0.25em] uppercase text-xs sm:text-sm animate-kiwi-rise">
                         Free &amp; open source email client
                     </p>
@@ -62,7 +55,7 @@ export default function Landing() {
                     </h1>
 
                     <p className="mt-4 sm:mt-6 text-base sm:text-xl max-w-xl opacity-80 animate-kiwi-rise [animation-delay:450ms]">
-                        An open source email client made for your self-hosted mail server. Built for speed, simplicity, and privacy.
+                        A simple, private, and open source email client built for your self-hosted mail server. Sign in to your email server, Gmail, or Outlook.
                     </p>
 
                     <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 animate-kiwi-rise [animation-delay:550ms]">
@@ -80,7 +73,7 @@ export default function Landing() {
                         </Link>
                     </div>
 
-                    <ul className="mt-6 sm:mt-12 grid grid-cols-3 gap-3 sm:gap-6 border-t border-kiwi-light-black pt-4 sm:pt-6 animate-kiwi-rise [animation-delay:650ms]">
+                    <ul className="flex flex-col sm:flex-row items-center mt-6 sm:mt-12 gap-3 sm:gap-6 border-t border-kiwi-light-black pt-4 sm:pt-6 animate-kiwi-rise [animation-delay:650ms]">
                         {FEATURE_POINTS.map((featurePoint) => (
                             <li key={featurePoint.title}>
                                 <p className="font-bold flex items-center gap-2">
@@ -91,18 +84,15 @@ export default function Landing() {
                             </li>
                         ))}
                     </ul>
+                </section>
 
-                    <p className="mt-4 sm:mt-6 text-sm opacity-40 animate-kiwi-rise [animation-delay:750ms]">
-                        Also connects to Gmail accounts.
-                    </p>
+                <section className="flex flex-wrap items-center justify-center mt-4 gap-x-6 gap-y-2 pb-4 sm:pb-6 text-sm opacity-40">
+                    <Link to="/privacy-policy" className="hover:opacity-60 transition-opacity duration-300">Privacy Policy</Link>
+                    <Link to="/terms-of-service" className="hover:opacity-60 transition-opacity duration-300">Terms of Service</Link>
+                    <a href="https://github.com/KiwiClientNet/KiwiClient" target="_blank" rel="noopener noreferrer" className="hover:opacity-60 transition-opacity duration-300">GitHub</a>
                 </section>
             </main>
 
-            <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pb-4 sm:pb-6 text-sm opacity-40">
-                <Link to="/privacy-policy" className="hover:opacity-60 transition-opacity duration-300">Privacy Policy</Link>
-                <Link to="/terms-of-service" className="hover:opacity-60 transition-opacity duration-300">Terms of Service</Link>
-                <a href="https://github.com/KiwiClientNet/KiwiClient" target="_blank" rel="noopener noreferrer" className="hover:opacity-60 transition-opacity duration-300">GitHub</a>
-            </footer>
         </div>
     );
 }
