@@ -1,19 +1,27 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 export function useDebounce(callback: Function, delayMilliseconds: number) {
+    const callbackRef = useRef(callback);
+    const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    useEffect(() => {
+        callbackRef.current = callback;
+    });
 
     // Adapted from https://decipher.dev/30-seconds-of-typescript/docs/debounce/
-    const debounce = (fn: Function, ms = 3000) => {
-        let timeoutId: ReturnType<typeof setTimeout>;
+    const debounceFunction = useMemo(() => {
         return function(this: any, ...args: any[]) {
-            const overrideArg = typeof (args[0]) === 'boolean' // Not sure if there's a better way to do this where the array is specified precisely
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => fn.apply(this, args), overrideArg ? 0 : ms);
+            const forceImmediate = args[0] === true;
+            clearTimeout(timeoutIdRef.current);
+            if (forceImmediate) {
+                // Sync call: reads form/editor before any following clear runs
+                return callbackRef.current.apply(this, args);
+            }
+            timeoutIdRef.current = setTimeout(
+                () => callbackRef.current.apply(this, args),
+                delayMilliseconds
+            );
         };
-    };
-
-    // Ensures that react doesn't create a new function for us on a re-render
-    const debounceFunction = useMemo(() => debounce(callback, delayMilliseconds), []);
-
+    }, [delayMilliseconds]);
     return debounceFunction;
 }

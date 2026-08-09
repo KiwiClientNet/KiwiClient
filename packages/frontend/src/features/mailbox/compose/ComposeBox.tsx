@@ -30,7 +30,6 @@ export default function ComposeBox() {
     const specialDraftFolderPath = useMailboxStore(state => state.specialDraftFolderPath);
     const setFormRef = useComposeEmailStore(state => state.setFormRef);
     const setEditorRef = useComposeEmailStore(state => state.setEditorRef);
-    const debounceDraftSave = useDebounce(handleSavingDraft, 3000);
     const [draftUid, setDraftUid] = useState<undefined | number>(undefined);
 
     async function handleSavingDraft(): Promise<boolean> {
@@ -50,21 +49,28 @@ export default function ComposeBox() {
 
         const displaySubject = draft.subject.length === 0 ? "(No subject)" : draft.subject;
 
-        // TODO: Great, I can save a draft by creating one but now I will need to get the uid and update it
         setMessage(`Saving draft '${displaySubject}'...`, "loading");
 
-        // Backend call to send here
-        const response = await authFetch('/api/messages/draft', {
-            method: 'POST',
-            body: emailToSaveToDrafts
-        })
+        let response;
+        if (draftUid === undefined) {
+            response = await authFetch('/api/messages/draft', {
+                method: 'POST',
+                body: emailToSaveToDrafts
+            })
+        } else {
+            response = await authFetch(`/api/messages/draft/${encodeURIComponent(draftUid)}`, {
+                method: 'PUT',
+                body: emailToSaveToDrafts
+            })
+        }
+
 
         if (response.ok) {
-            setMessage(`Draft saved ${new Date().toLocaleTimeString()}`, "success", 3000);
+            setMessage(`Draft saved at ${new Date().toLocaleTimeString()}`, "success", 3000);
             const data = await response.json() as EmailUidResponse;
             // Do not update unless we've created a new draft
             if (draftUid === undefined && data.success) {
-                setDraftUid(data.data.uid);
+                setDraftUid(Number(data.data.uid));
             }
             return true;
         }
@@ -73,18 +79,20 @@ export default function ComposeBox() {
 
         return false;
     }
+    const debounceDraftSave = useDebounce(handleSavingDraft, 1000);
 
 
     function handleClosingComposeBox(event: React.MouseEvent<SVGSVGElement, MouseEvent>): void {
         event.stopPropagation();
-        // Save draft - we want this to run immediately. TODO: notify the user that it's been saved/ failed to save?
-        debounceDraftSave(true); // True to override the debounc and force a save
+        // Save draft - we want this to run immediately
+        debounceDraftSave(true); // `true` to override the debounce and force a save
         setHidden(true);
         setMinimized(false);
         setFullScreen(false);
         setComposeBoxTitle("New message");
         formRef.current?.clearDraft();
         editorRef.current?.clearEditor();
+        setDraftUid(undefined);
     }
 
     async function handleSend(): Promise<boolean> {
@@ -121,7 +129,6 @@ export default function ComposeBox() {
             formRef.current?.clearDraft();
             editorRef.current?.clearEditor();
 
-            // TODO: Also make it obvious to the user that the mail is sending with an alert or notification as well as the status bar?
             setMessage("Message sent!", "success", 3000);
 
             queryClient.invalidateQueries({ queryKey: glanceQueryKey(sentPath) });
@@ -129,8 +136,8 @@ export default function ComposeBox() {
         }
 
         const errorResponse = await response.json() as EmailToSendResponse;
-        if (!errorResponse.success && errorResponse.code === "IMAP_COULD_NOT_MOVE_MESSAGE") {
-            alert("Could not move sent message to sent folder"); // TODO: Should make the alerts nice with the UI
+        if (!errorResponse.success && errorResponse.code === "MESSAGE_SEND_FAILED") {
+            alert("Could not send the message due to a protocol error"); // TODO: Should make the alerts nice with the UI
         } else if (!errorResponse.success && errorResponse.code === "INTERNAL_ERROR") {
             alert("Could not send message due to an internal server error");
         }
@@ -237,9 +244,6 @@ function Footer({ sendEmail }: FooterProps) {
                 />
             </div>
             <div className="flex items-center gap-4">
-                <span>
-                    Saved
-                </span>
                 <Button
                     text=""
                     buttonSize="sm"

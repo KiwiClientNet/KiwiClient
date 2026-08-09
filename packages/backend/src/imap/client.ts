@@ -676,16 +676,16 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
         }
     }
 
-    async addRawMimeToMailbox(mime: MimeNode, mailboxPath: string, messageFlags?: string[]): Promise<number> {
+    async addRawMimeToMailbox(mime: MimeNode, mailboxPath: string, messageFlags?: string[]): Promise<number | null> {
         assert(mailboxPath.length !== 0, "A mailbox must be specified");
-        const ERROR = -1;
+        const ERROR = null;
 
         if (!this._client || !this._isAuthenticated()) {
             return ERROR;
         }
 
         const mailboxLock = await this._client.getMailboxLock(mailboxPath);
-        let returnUid: number;
+        let returnUid;
 
         try {
             const mimeBuffer = await mime.build();
@@ -701,5 +701,45 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
             mailboxLock.release();
         }
         return returnUid;
+    }
+
+    /**
+     * @brief Permanently deletes all messages specified - use with caution!
+     *
+     * @param mailboxPathSource - The source mailbox.
+     * @param uniqueIds - The message UIDs to update; must be non-empty.
+     * @returns A boolean on if the delete was successful or not
+     */
+    async deleteMessages(mailboxPathSource: string, uniqueIds: number[]) {
+        assert(uniqueIds.length > 0, "uniqueIds must contain at least one value");
+        for (const uniqueId of uniqueIds) {
+            assert(!isNaN(uniqueId) && uniqueId >= 0, "every uniqueId must be a non-negative number");
+        }
+
+        if (!this._client || !this._isAuthenticated()) {
+            return false;
+        }
+
+        if (mailboxPathSource.length === 0) {
+            return false;
+        }
+
+        const uidRange = uniqueIds.join(",");
+        const mailboxLock = await this._client.getMailboxLock(mailboxPathSource);
+
+        try {
+            console.log("Deleting!");
+            const result = await this._client.messageDelete(uidRange, { uid: true });
+            if (!result) {
+                return false;
+            }
+        } catch {
+            return false;
+        }
+        finally {
+            mailboxLock.release();
+        }
+
+        return true;
     }
 }

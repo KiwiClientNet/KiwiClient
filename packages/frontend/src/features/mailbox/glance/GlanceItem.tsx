@@ -43,8 +43,9 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
     // In a sent folder every row is from the user, so the recipient is the
     // useful identity; everywhere else the sender is.
     const isSentMailbox = emailGlance.mailboxPath.toLowerCase().includes("sent");
-    const counterpart = isSentMailbox && emailGlance.firstRecipient ? emailGlance.firstRecipient : emailGlance.from;
-    const counterpartName = `${isSentMailbox ? "To: " : ""}${counterpart.name ?? counterpart.address}`;
+    const isDraftsMailbox = emailGlance.mailboxPath.toLowerCase().includes("draft");
+    const counterpart = (isSentMailbox || isDraftsMailbox) && emailGlance.firstRecipient ? emailGlance.firstRecipient : emailGlance.from;
+    const counterpartName = `${isSentMailbox || isDraftsMailbox ? "To: " : ""}${counterpart.name ?? counterpart.address}`;
     const counterpartAddress = counterpart.address;
 
     useEffect(() => {

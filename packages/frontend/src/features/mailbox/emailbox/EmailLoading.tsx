@@ -7,7 +7,7 @@
 
 export function EmailLoading() {
     return (
-        <div className="h-full w-full bg-kiwi-light-grey p-2">
+        <div className="h-full w-full bg-kiwi-light-grey p-2 rounded-2xl">
             <div className="max-w-3xl space-y-6">
                 <div className="space-y-3">
                     <div className="h-4 w-1/3 animate-pulse rounded bg-kiwi-white" />

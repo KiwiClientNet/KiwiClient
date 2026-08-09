@@ -198,7 +198,7 @@ export class SmtpInstance extends AbstractClient<Transporter> {
         try {
             const info = await this._client.sendMail(this._flattenEmailToSend(message));
 
-            console.log("Message sent: %s", info.messageId);
+            console.log("Message sent: %s", info);
 
             return true;
 
