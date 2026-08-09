@@ -19,7 +19,7 @@ export default function Landing() {
         <div className="relative flex h-dvh flex-col overflow-y-scroll overflow-x-hidden kiwi-scrollbar">
             <header className="flex items-center justify-between px-6 sm:px-12 py-3 sm:py-4">
                 <Link to="/" className="flex items-center gap-2 no-underline hover:text-kiwi-white">
-                    <Logo className="w-11 h-11" link={false} reverseLogo={true} />
+                    <Logo className="w-11 h-11" reverseLogo={true} />
                     <span className="font-bold text-lg hidden sm:block">KiwiClient</span>
                 </Link>
 

@@ -119,7 +119,7 @@ export function GlanceToolbar({
     });
 
     return (
-        <div className="kiwi-panel bg-kiwi-black shrink-0 mb-2 flex flex-row items-center gap-2 my-1 p-3 pl-4">
+        <div className="kiwi-panel bg-kiwi-black shrink-0 flex flex-row items-center gap-2 my-2 md:my-1 p-3 pl-4">
             <div className="flex justify-center px-2">
                 <Checkbox checked={areAllSelected} onChange={onToggleSelectAll} />
             </div>

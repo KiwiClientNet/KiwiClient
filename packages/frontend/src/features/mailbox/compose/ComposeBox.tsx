@@ -5,18 +5,15 @@ import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import EmailEditor, { type EmailEditorHandle } from "./EmailEditor";
 import MessageForm, { type MessageFormHandle } from "./MessageForm";
 import { Button } from "../../../components/Button";
-import { type EmailToDraft, type EmailToSend, type EmailToSendResponse } from "@KiwiClient/shared";
+import { type EmailToDraft, type EmailToSend, type EmailToSendResponse, type EmailUidResponse } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
 import { useToastStore } from "../../../store/toastStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { glanceQueryKey } from "../glance/queryKeys";
 import { useMailboxStore } from "../../../store/mailboxStore";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export type NewEmailComposeType = 'new' | 'reply' | 'reply_all' | 'forward';
-
-function initialiseDraft(): void {
-    console.log("Draft initialised");
-}
 
 export default function ComposeBox() {
     const [fullScreen, setFullScreen] = useState<boolean>(false);
@@ -33,9 +30,55 @@ export default function ComposeBox() {
     const specialDraftFolderPath = useMailboxStore(state => state.specialDraftFolderPath);
     const setFormRef = useComposeEmailStore(state => state.setFormRef);
     const setEditorRef = useComposeEmailStore(state => state.setEditorRef);
+    const debounceDraftSave = useDebounce(handleSavingDraft, 3000);
+    const [draftUid, setDraftUid] = useState<undefined | number>(undefined);
+
+    async function handleSavingDraft(): Promise<boolean> {
+        const draft = formRef.current?.getDraft();
+
+        if (!draft) {
+            return false;
+        }
+
+        const emailToSaveToDrafts: EmailToDraft = {
+            from: { name: name, address: email },
+            ...draft,
+            replyTo: [{ name: name, address: email }],
+            html: editorRef.current?.getHtml() ?? '',
+            draftFolder: specialDraftFolderPath
+        };
+
+        const displaySubject = draft.subject.length === 0 ? "(No subject)" : draft.subject;
+
+        // TODO: Great, I can save a draft by creating one but now I will need to get the uid and update it
+        setMessage(`Saving draft '${displaySubject}'...`, "loading");
+
+        // Backend call to send here
+        const response = await authFetch('/api/messages/draft', {
+            method: 'POST',
+            body: emailToSaveToDrafts
+        })
+
+        if (response.ok) {
+            setMessage(`Draft saved ${new Date().toLocaleTimeString()}`, "success", 3000);
+            const data = await response.json() as EmailUidResponse;
+            // Do not update unless we've created a new draft
+            if (draftUid === undefined && data.success) {
+                setDraftUid(data.data.uid);
+            }
+            return true;
+        }
+
+        setMessage(`Failed to save draft '${displaySubject}', trying again later`, "error", 3000);
+
+        return false;
+    }
+
 
     function handleClosingComposeBox(event: React.MouseEvent<SVGSVGElement, MouseEvent>): void {
         event.stopPropagation();
+        // Save draft - we want this to run immediately. TODO: notify the user that it's been saved/ failed to save?
+        debounceDraftSave(true); // True to override the debounc and force a save
         setHidden(true);
         setMinimized(false);
         setFullScreen(false);
@@ -141,7 +184,7 @@ export default function ComposeBox() {
                     />
                 </div>
             </header>
-            <span className="flex flex-col flex-1" onInput={initialiseDraft}>
+            <span className="flex flex-col flex-1" onInput={debounceDraftSave}>
                 <MessageForm setComposeBoxTitle={setComposeBoxTitle} ref={formRef} />
                 <div className={minimized ? "invisible" : "flex min-h-0 flex-1 flex-col overflow-y-auto p-4"}>
                     <EmailEditor ref={editorRef} />
@@ -193,13 +236,18 @@ function Footer({ sendEmail }: FooterProps) {
                     onClick={() => alert("Attachments coming soon!")}
                 />
             </div>
-            <Button
-                text=""
-                buttonSize="sm"
-                title="Discard draft"
-                icon={<TrashIcon className="size-5" aria-hidden="true" />}
-                onClick={() => alert("Drafts coming soon!")}
-            />
+            <div className="flex items-center gap-4">
+                <span>
+                    Saved
+                </span>
+                <Button
+                    text=""
+                    buttonSize="sm"
+                    title="Discard draft"
+                    icon={<TrashIcon className="size-5" aria-hidden="true" />}
+                    onClick={() => alert("Drafts coming soon!")}
+                />
+            </div>
         </footer>
     );
 }

@@ -79,7 +79,7 @@
 
 /* A raised panel: the standard container surface of the app shell. */
 @utility kiwi-panel {
-    @apply bg-kiwi-middle-black border border-kiwi-light-black rounded-2xl;
+    @apply bg-kiwi-middle-black border border-kiwi-light-black md:rounded-2xl;
 }
 
 /* A text input; the green focus border is the app-wide focus signal. */

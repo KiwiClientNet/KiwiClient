@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState, useContext, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bars3Icon, MagnifyingGlassIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, PencilIcon } from "@heroicons/react/24/outline";
 import { AuthContext } from "../../auth/AuthContext";
 import { fetchMailboxes } from "../../api/mailboxes";
 import { MailboxPageLoading, StatusComponent } from "../../components/Loading";
@@ -177,35 +177,27 @@ export function MailboxPage() {
             />
 
             <div className="flex flex-col flex-1 min-w-0 h-dvh">
-                <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-kiwi-middle-black border-b border-kiwi-light-black">
+                <header className="flex items-center mx-3 mt-3 rounded-2xl border-kiwi-light-black">
                     <button
                         type="button"
                         onClick={() => setIsSidebarOpen(true)}
                         aria-label="Open menu"
-                        className="kiwi-icon-btn -ml-2"
+                        className="md:hidden kiwi-icon-btn -ml-2"
                     >
                         <Bars3Icon className="size-6" />
                     </button>
-                    <span className="font-bold truncate">{selectedMailbox.name}<span className="text-kiwi-green">.</span></span>
+
+                    {/* Temporary search field. It is a real, focus-able input so the header
+                    reads as finished, but it has no submit handler yet. */}
+                    <input
+                        type="search"
+                        placeholder="Search messages…"
+                        aria-label="Search messages"
+                        className="kiwi-input border-kiwi-light-black bg-kiwi-middle-black py-2 text-sm placeholder:text-kiwi-middle-grey"
+                    />
                 </header>
 
-                {/* Temporary search field. It is a real, focus-able input so the header
-                    reads as finished, but it has no submit handler yet. */}
-                <div className="hidden md:block m-3 mb-0">
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-kiwi-middle-grey">
-                            <MagnifyingGlassIcon aria-hidden="true" className="size-5" />
-                        </div>
-                        <input
-                            type="search"
-                            placeholder="Search messages…"
-                            aria-label="Search messages"
-                            className="kiwi-input border-kiwi-light-black bg-kiwi-middle-black py-2 pl-10 text-sm placeholder:text-kiwi-middle-grey"
-                        />
-                    </div>
-                </div>
-
-                <div className="flex-1 min-h-0 flex flex-col lg:flex-row lg:gap-2 lg:m-3 lg:p-2 lg:kiwi-panel">
+                <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 lg:m-3 lg:p-2 lg:kiwi-panel">
                     <div className={`${mobileView === "glance" ? "flex" : "hidden"} lg:flex flex-col flex-1 lg:flex-none lg:w-md xl:w-lg 2xl:w-xl min-h-0`}>
                         {/* TODO: When updated with zustand, no longer need to prop drill */}
                         <Glance selectedMailbox={selectedMailbox} specialTrashFolderPath={specialTrashFolderPath} />
@@ -223,12 +215,13 @@ export function MailboxPage() {
                     <button
                         onClick={() => setHidden(false)}
                         aria-label="Compose a new email"
-                        className="w-16 h-16 bg-kiwi-green text-kiwi-black rounded-full hover:bg-kiwi-white flex items-center justify-center transition-colors duration-200 fixed bottom-20 right-4 md:hidden shadow-kiwi-black shadow-lg"
+                        className="w-16 h-16 bg-kiwi-green text-kiwi-black rounded-full hover:bg-kiwi-white flex items-center justify-center transition-colors duration-200 fixed bottom-8 right-4 md:hidden shadow-kiwi-black shadow-lg"
                     >
                         <PencilIcon className="size-8" />
                     </button>
                 )}
-                <div className={`${mobileView === "email" ? "hidden" : "block"} lg:block`}>
+                <div className="hidden md:block">
+                {/* <div className={`${mobileView === "email" ? "hidden" : "block"} lg:block`}> */}
                     <StatusBar />
                 </div>
                 <ComposeBox />

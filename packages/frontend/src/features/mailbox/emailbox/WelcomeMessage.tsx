@@ -11,7 +11,7 @@ import ViewOnGitHub from "../../../components/ViewOnGitHub";
 export function WelcomeMessage() {
     return (
         <div className="h-full w-full flex flex-col items-center justify-center-safe p-6 text-center gap-4">
-            <Logo link={false} reverseLogo={true} />
+            <Logo reverseLogo={true} />
             <h1 className="text-4xl lg:text-5xl font-bold">An inbox that's truly yours<span className="text-kiwi-green">.</span></h1>
             <h2 className="text-xl lg:text-2xl opacity-80">Thank you for choosing KiwiClient: the free and open source email client</h2>
             <div className="kiwi-panel max-w-xl p-4">

@@ -14,6 +14,7 @@ import type { MailboxSelection } from "../types";
 import { SidebarItem } from "./SidebarItem";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import Logo from "../../../components/Logo";
+import { UserMenu } from "../statusbar/UserMenu";
 
 interface SidebarProps {
     mailboxTree: MailboxTreeNode[];
@@ -46,8 +47,11 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                     md:translate-x-0
                 `}
             >
-                <div className="flex items-center justify-between pl-4 md:justify-center">
-                    <Logo reverseLogo={true} className="w-25 h-25" linkTo="/mail" />
+                <div className="flex flex-row items-center justify-between pl-4 md:justify-center">
+                    <Logo reverseLogo={true} className="w-15 h-15" />
+                    <span className="md:hidden">
+                        <UserMenu />
+                    </span>
                     <button
                         type="button"
                         onClick={onClose}

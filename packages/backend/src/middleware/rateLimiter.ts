@@ -40,12 +40,12 @@ export const sendRateLimiter = rateLimit({
 });
 
 /**
- * @brief // TODO:Figure out a good rate limit
+ * @brief Draft rate limiter, 21 times a minute is the maximum requests the user could send if they save the draft every 3000ms + once on message close
  *
  */
 export const draftRateLimiter = rateLimit({
     windowMs: ONE_MINUTE_MS,
-    limit: 4,
+    limit: 21,
     standardHeaders: "draft-7",
     legacyHeaders: false,
     message: { success: false, code: "IMAP_DRAFT_UPDATED_TOO_OFTEN", message: "Too many requests to update the draft, please try again shortly" }

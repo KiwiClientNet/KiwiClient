@@ -128,7 +128,7 @@ export const EmailToDraftSchema = EmailBodySchema.extend({
 });
 
 export const EmailUidSchema = z.object({
-    uid: Number
+    uid: z.number()
 });
 
 export type EmailAddress = z.infer<typeof EmailAddressSchema>;

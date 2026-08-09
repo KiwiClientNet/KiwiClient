@@ -32,7 +32,7 @@ export default function WaitlistLanding() {
 
                 <section className="flex flex-col min-w-0 lg:order-2">
                     <Link to="/" className="flex items-center gap-2 no-underline hover:text-kiwi-white self-start">
-                        <Logo className="w-10 h-10" link={false} reverseLogo={true} />
+                        <Logo className="w-10 h-10" reverseLogo={true} />
                         <span className="font-bold text-lg">KiwiClient</span>
                     </Link>
 
