@@ -322,7 +322,6 @@ router.post("/messages/draft", draftRateLimiter, async (request: Request<{}, {},
 router.put("/messages/draft/:uid", async (request: Request<{ uid: number }, {}, EmailToDraft>, response: Response<EmailUidResponse>) => {
     const uidToUpdate = decodeUid(request.params.uid);
 
-    console.log(uidToUpdate);
     if (uidToUpdate === null) {
         response.status(400).json({ success: false, code: "MESSAGE_DRAFT_FAILED", message: "Missing message uid to update draft" });
         return;

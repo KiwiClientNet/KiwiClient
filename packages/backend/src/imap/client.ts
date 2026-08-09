@@ -728,7 +728,6 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
         const mailboxLock = await this._client.getMailboxLock(mailboxPathSource);
 
         try {
-            console.log("Deleting!");
             const result = await this._client.messageDelete(uidRange, { uid: true });
             if (!result) {
                 return false;
