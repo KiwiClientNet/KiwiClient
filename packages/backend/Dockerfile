@@ -58,8 +58,8 @@ EXPOSE 3001
 
 # Injected by CI: `docker build --build-arg GIT_COMMIT=$(git rev-parse --short HEAD)`
 # The health endpoint reads process.env.GIT_COMMIT to report which build is live.
-# ARG GIT_COMMIT=dev
-ENV GIT_COMMIT=prod
+ARG GIT_COMMIT=dev
+ENV GIT_COMMIT=$GIT_COMMIT
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "dist/index.js"]
