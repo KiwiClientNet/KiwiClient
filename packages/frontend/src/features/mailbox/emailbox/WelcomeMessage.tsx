@@ -10,15 +10,15 @@ import ViewOnGitHub from "../../../components/ViewOnGitHub";
 
 export function WelcomeMessage() {
     return (
-        <div className="h-full w-full flex flex-col items-center justify-center-safe p-6 text-center gap-4">
-            <Logo reverseLogo={true} />
+        <div className="h-full w-full flex flex-col items-center justify-center-safe p-6 text-center gap-3">
+            <Logo reverseLogo={true} className="w-40 h-40" />
             <h1 className="text-4xl lg:text-5xl font-bold">An inbox that's truly yours<span className="text-kiwi-green">.</span></h1>
             <h2 className="text-xl lg:text-2xl opacity-80">Thank you for choosing KiwiClient: the free and open source email client</h2>
             <div className="kiwi-panel max-w-xl p-4">
                 <p className="text-base opacity-80">
                     Our mission is to deliver ad-free, tracking-free, and AI-free
                     software which makes your life easier. We are still in
-                    development. Have feedback? Email <a href="mailto:admin@kiwiclient.net">admin@kiwiclient.net</a>
+                    development. Have feedback? Spot an issue? Email <a href="mailto:admin@kiwiclient.net">admin@kiwiclient.net</a>
                     {" "}or open an issue on GitHub!
                 </p>
             </div>

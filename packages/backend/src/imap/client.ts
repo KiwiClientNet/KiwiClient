@@ -483,11 +483,6 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
     /**
      * @brief Replaces every `cid:` reference in the HTML with an embedded data URI.
      *
-     * Pure synchronous companion to the parallel IMAP fetch; given the already
-     * downloaded image part buffers it walks the inline image node list and
-     * substitutes each `cid:<contentId>` occurrence with a base64 data URI so
-     * the frontend iframe can render inline images without further requests.
-     *
      * @param html - The sanitised HTML body of the message, containing zero or more `cid:` references.
      * @param inlineImages - The image body-structure nodes discovered earlier, each carrying a `part` id, MIME `type`, and content `id`.
      * @param bodyParts - The map of body-part id to raw buffer returned by the parallel `fetchOne` call, or undefined when the fetch was skipped.
@@ -521,10 +516,6 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
 
     /**
      * @brief Fetches envelope, flags, and body content for one UID assuming the mailbox lock is held.
-     *
-     * Carved out of getSingleMessage so getManyMessages can reuse the body-extraction
-     * logic without re-acquiring the mailbox lock for every UID. Callers must
-     * ensure the lock is acquired before invoking and released afterwards.
      *
      * @param messageUid - The IMAP UID of the message to fetch.
      * @param mailboxPath - The IMAP path of the mailbox; used only to populate the returned DTO.
@@ -602,16 +593,6 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
     /**
      * @brief Fetches several messages within a single mailbox lock.
      *
-     * Acquires the IMAP mailbox lock once and iterates the UIDs serially,
-     * reusing fetchMessageContent for each. Useful for prefetch flows that
-     * warm a frontend cache without paying one HTTP round trip and one lock
-     * acquire per message. Messages that fail to fetch are skipped silently
-     * so a single broken UID does not abort the whole batch.
-     *
-     * IMAP is a serial protocol per connection, so the loop cannot be
-     * parallelised by spawning concurrent fetchMessageContent calls on the
-     * same imapflow client.
-     *
      * @param mailboxPath - The IMAP path of the containing mailbox.
      * @param uniqueIds - The IMAP UIDs to fetch; an empty array is a no-op.
      * @returns The resolved EmailMessage DTOs in the same order as uniqueIds, with any null entries dropped.
@@ -638,8 +619,7 @@ export class ImapInstance extends AbstractClient<ImapFlow> {
 
         try {
             for (const uniqueId of uniqueIds) {
-                const messageUid = Math.round(uniqueId);
-                const message = await this._fetchMessageContent(messageUid, mailboxPath);
+                const message = await this._fetchMessageContent(uniqueId, mailboxPath);
                 if (message) {
                     results.push(message);
                 }

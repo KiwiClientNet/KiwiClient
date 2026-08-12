@@ -10,6 +10,7 @@ import { Forward, Reply, ReplyAll } from "lucide-react";
 import type { EmailAddress, EmailMessage } from "@KiwiClient/shared";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import type { NewEmailComposeType } from "../compose/ComposeBox";
+import { draftFingerprint } from "../compose/draftFingerprint";
 
 function formatFullDateTime(dateIso: string): string {
     return new Date(dateIso).toLocaleString(navigator.language, { dateStyle: "long", timeStyle: "short" });
@@ -69,6 +70,7 @@ export function EmailHeader({ data }: EmailHeaderProps) {
     const setHidden = useComposeEmailStore(state => state.setHidden);
     const formRef = useComposeEmailStore(state => state.formRef);
     const editorRef = useComposeEmailStore(state => state.editorRef);
+    const setDraftBaseline = useComposeEmailStore(state => state.setDraftBaseline);
 
     // Open the compose message box up
     const handleClick = (type: NewEmailComposeType) => {
@@ -79,6 +81,14 @@ export function EmailHeader({ data }: EmailHeaderProps) {
 
         formRef.setDraft(data, type);
         editorRef.setEditor(data, type);
+        requestAnimationFrame(() => {
+            const draft = formRef.getDraft();
+            setDraftBaseline(draftFingerprint({
+                ...draft,
+                html: editorRef.getHtml(),
+                text: editorRef.getText(),
+            }));
+        });
 
         // Has to be called after we set the content to make sure the cursor is at the start
         if (type === "reply" || type === "reply_all") {

@@ -73,8 +73,8 @@ function formatRecipients(recipients: EmailMessage["to"]): string {
     return recipients.map(recipient => `${recipient.name ?? ""} &lt;${recipient.address}&gt;`).join(", ");
 }
 
-function messageToPrepend(previousEmailGlance: EmailMessage, type: NewEmailComposeType): string {
-    const dateObj = new Date(previousEmailGlance.dateIso);
+function messageToPrepend(previousEmail: EmailMessage, type: NewEmailComposeType): string {
+    const dateObj = new Date(previousEmail.dateIso);
     const day = dateObj.toLocaleDateString(undefined, { weekday: "long" });
     const date = dateObj.toLocaleDateString(); // local locale date format
     const time24 = dateObj.toLocaleTimeString(undefined, {
@@ -82,7 +82,7 @@ function messageToPrepend(previousEmailGlance: EmailMessage, type: NewEmailCompo
         minute: "2-digit",
         hour12: false,
     });
-    const sender = `${previousEmailGlance.from.name ?? ""} &lt;${previousEmailGlance.from.address}&gt;`;
+    const sender = `${previousEmail.from.name ?? ""} &lt;${previousEmail.from.address}&gt;`;
 
     switch (type) {
         case 'new':
@@ -91,30 +91,28 @@ function messageToPrepend(previousEmailGlance: EmailMessage, type: NewEmailCompo
         case 'reply_all':
             return `<p>On ${day}, ${date} at ${time24}, ${sender} wrote:</p>`;
         case 'forward':
-            const ccLine = previousEmailGlance.cc.length > 0 ? `CC: ${formatRecipients(previousEmailGlance.cc)}</p>` : '';
+            const ccLine = previousEmail.cc.length > 0 ? `CC: ${formatRecipients(previousEmail.cc)}</p>` : '';
             return `<p>------- Forwarded Message -------<br><br>` +
                 `From: ${sender}<br>` +
                 `Date: ${day}, ${date} at ${time24}<br>` +
-                `Subject: ${previousEmailGlance.subject}<br>` +
-                `To: ${formatRecipients(previousEmailGlance.to)}<br>` +
+                `Subject: ${previousEmail.subject}<br>` +
+                `To: ${formatRecipients(previousEmail.to)}<br>` +
                 ccLine
     }
 }
 
 export interface EmailEditorHandle {
     getHtml: () => string;
+    getText: () => string;
     clearEditor: () => void;
-    setEditor: (previousEmailGlance: EmailMessage, type: NewEmailComposeType) => void;
+    setEditor: (previousEmail: EmailMessage, type: NewEmailComposeType) => void;
     focusInput: () => void;
 }
-
-// const INITIAL_MSG = `\n\nSent using <a target="_blank" rel="noopener noreferrer nofollow" href="https://kiwiclient.net">KiwiClient</a>.`
 
 const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
 
     const editor = useEditor({
         extensions,
-        // content: INITIAL_MSG,
         parseOptions: {
             preserveWhitespace: 'full',
         }
@@ -122,35 +120,31 @@ const EmailEditor = forwardRef<EmailEditorHandle>((_props, ref) => {
 
     useImperativeHandle(ref, () => ({
         getHtml: () => editor?.getHTML() ?? '',
+        getText: () => editor?.getText() ?? '',
         clearEditor: () => {
-            // editor.commands.setContent(INITIAL_MSG);
             editor.commands.clearContent();
         },
 
-        setEditor: (previousEmailGlance, type) => {
-            // Clear the content
-            editor.commands.clearContent();
-            const preface = messageToPrepend(previousEmailGlance, type);
-            let message: string
+        setEditor: (previousEmail, type) => {
+            editor.commands.clearContent(); // Clear the content
+            let message = `${DOMPurify.sanitize(previousEmail.html ?? previousEmail.text ?? "")}`;
 
-            if (previousEmailGlance.html) {
-                message = DOMPurify.sanitize(previousEmailGlance.html);
-            } else if (previousEmailGlance.text) {
-                message = `<pre>${DOMPurify.sanitize(previousEmailGlance.text)}</pre>`;
+            if (type === "reply" || type === "reply_all") {
+                message = `<blockquote>${message}</blockquote>`
             }
-            else {
-                message = "";
 
+            if (type !== "new") {
+                const preface = messageToPrepend(previousEmail, type);
+                message = `<br>${preface}${message}`
             }
-            const quotedMessage = (type === "reply" || type === "reply_all") && message ? `<blockquote>${message}</blockquote>` : `${message}`;
-            editor.commands.setContent(`<br>${preface}${quotedMessage}`);
+            editor.commands.setContent(message);
         },
 
         focusInput: () => { editor.commands.focus('start') }
     }), [editor]);
 
     return (
-        <div className="flex flex-1 flex-col gap-2 min-h-0 overflow-y-clip">
+        <div className="flex flex-1 flex-col gap-2 min-h-0">
             <EditorContent
                 editor={editor}
                 className={

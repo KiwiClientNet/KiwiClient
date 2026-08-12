@@ -7,7 +7,7 @@
  * same construction code as authenticated endpoints.
  */
 
-type HttpMethod = "GET" | "POST" | "PATCH" | "PUT";
+type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 export interface ApiFetchOptions {
     method?: HttpMethod;

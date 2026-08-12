@@ -21,10 +21,10 @@ import {
     EmailToSendSchema,
     EmailToDraft,
     EmailToDraftSchema,
+    EmailDraftDeleteSchema,
     EmailUidResponse,
-    ApiError
 } from "@KiwiClient/shared";
-import { decrypt, REFRESH_TOKEN_COOKIE_NAME, type TokenPayload } from "../auth_sessions.js";
+import { decrypt, type TokenPayload } from "../auth_sessions.js";
 import { getLoginRequestBodyFromResponseCookie } from "../utils/email.js";
 import { imapPool } from "../connection_pool.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -345,13 +345,58 @@ router.put("/messages/draft/:uid", async (request: Request<{ uid: number }, {}, 
         }
 
         // STEP: 2) Delete the old draft
-        imapInstance.deleteMessages(requestDraft.draftFolder, [uidToUpdate]);
+        const deletionResult = await imapInstance.deleteMessages(requestDraft.draftFolder, [uidToUpdate]);
+        if (!deletionResult) {
+            await imapInstance.deleteMessages(requestDraft.draftFolder, [newUid]);
+            response.status(500).json({ success: false, code: "MESSAGE_DRAFT_FAILED", message: "Server failed to update draft" });
+            return;
+        }
 
         response.json({ success: true, data: { uid: newUid } });
     } finally {
         logoutOfPools(loginBody);
     }
 
+});
+
+router.delete("/messages/draft/:uid", async (request: Request<{ uid: string }, {}, { draftFolder: string }>, response: Response<EmailUidResponse>) => {
+    const uidToDelete = decodeUid(request.params.uid);
+
+    if (uidToDelete === null) {
+        response.status(400).json({ success: false, code: "MESSAGE_DRAFT_FAILED", message: "Missing message uid to delete draft" });
+        return;
+    }
+
+    const bodyParseResult = EmailDraftDeleteSchema.safeParse(request.body);
+    if (!bodyParseResult.success) {
+        response.status(400).json({ success: false, code: "VALIDATION_ERROR", message: bodyParseResult.error.issues[0]?.message ?? "Invalid body" });
+        return;
+    }
+
+    const tokenPayload = response.locals.user as TokenPayload;
+
+    try {
+        const loginBody = getLoginRequestBodyFromResponseCookie(tokenPayload, decrypt);
+        const imapInstance = await imapPool.acquire(loginBody);
+
+        try {
+            const deletionResult = await imapInstance.deleteMessages(bodyParseResult.data.draftFolder, [uidToDelete]);
+            if (!deletionResult) {
+                response.status(500).json({ success: false, code: "MESSAGE_DRAFT_FAILED", message: "Server failed to delete draft" });
+                return;
+            }
+
+            response.json({ success: true, data: { uid: uidToDelete } });
+        } finally {
+            imapPool.release(loginBody);
+        }
+    } catch (thrownError: any) {
+        if (respondIfCredentialsRejected(thrownError, response)) {
+            return;
+        }
+        console.error(thrownError);
+        response.status(500).json({ success: false, code: "INTERNAL_ERROR", message: "Failed to delete draft" });
+    }
 });
 
 // Finally, a delete method if the user decides to send the draft

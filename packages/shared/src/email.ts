@@ -32,11 +32,25 @@ export const EmailFlagsSchema = z.object({
     draft: z.boolean()
 });
 
+
+/**
+ * @brief Recipients and body fields shared by full messages and compose payloads.
+ */
+export const EmailRecipientsAndBodySchema = z.object({
+    to: z.array(EmailAddressSchema),
+    cc: z.array(EmailAddressSchema),
+    bcc: z.array(EmailAddressSchema),
+    replyTo: z.array(EmailAddressSchema),
+    html: z.string().optional(),
+    text: z.string().optional(),
+});
+
 /**
  * @brief Lightweight email summary used in mailbox listings.
  *
- * Excludes the message body so that paged listings remain small over the wire.
- * The full body is fetched separately via the single-message endpoint.
+ * Excludes the message body and full recipient lists so that paged listings
+ * remain small over the wire. The full message is fetched separately via the
+ * single-message endpoint.
  *
  * firstRecipient carries only the first To address (not the full list) so
  * sent-folder listings can lead with the recipient without bloating the page.
@@ -54,20 +68,16 @@ export const EmailGlanceSchema = z.object({
 
 /**
  * @brief Full email message including body and all recipients.
- *
- * Extends EmailGlance so that any consumer with an EmailMessage can also use
- * it everywhere an EmailGlance is expected.
- *
- * TODO: I'm repeating some code here with types
  */
-export const EmailMessageSchema = EmailGlanceSchema.extend({
-    to: z.array(EmailAddressSchema),
-    cc: z.array(EmailAddressSchema),
-    bcc: z.array(EmailAddressSchema),
-    replyTo: z.array(EmailAddressSchema),
-    html: z.string().optional(),
-    text: z.string().optional()
-});
+export const EmailMessageSchema = EmailGlanceSchema.extend(EmailRecipientsAndBodySchema.shape);
+
+/**
+ * @brief Compose/send payload without IMAP listing metadata.
+ */
+export const EmailContentSchema = z.object({
+    from: EmailAddressSchema,
+    subject: z.string(),
+}).extend(EmailRecipientsAndBodySchema.shape);
 
 /** 
  * @brief Mailbox name and path.
@@ -100,30 +110,20 @@ export const MailboxSchema = MailboxNamePathSchema.extend({
 });
 
 /** 
- * @brief General Email body which is sent to a draft and eventually the sent mail
- */
-export const EmailBodySchema = z.object({
-    from: EmailAddressSchema,
-    to: z.array(EmailAddressSchema),
-    cc: z.array(EmailAddressSchema),
-    bcc: z.array(EmailAddressSchema),
-    replyTo: z.array(EmailAddressSchema),
-    subject: z.string(),
-    html: z.string().optional(),
-    text: z.string().optional(),
-});
-
-/** 
  * @brief Schema for sending a an email message
  */
-export const EmailToSendSchema = EmailBodySchema.extend({
+export const EmailToSendSchema = EmailContentSchema.extend({
     sentFolder: z.string()
 });
 
 /** 
  * @brief Schema for draftinging a an email message
  */
-export const EmailToDraftSchema = EmailBodySchema.extend({
+export const EmailToDraftSchema = EmailContentSchema.extend({
+    draftFolder: z.string()
+});
+
+export const EmailDraftDeleteSchema = z.object({
     draftFolder: z.string()
 });
 
@@ -135,9 +135,11 @@ export type EmailAddress = z.infer<typeof EmailAddressSchema>;
 export type EmailFlags = z.infer<typeof EmailFlagsSchema>;
 export type EmailGlance = z.infer<typeof EmailGlanceSchema>;
 export type EmailMessage = z.infer<typeof EmailMessageSchema>;
-export type EmailBody = z.infer<typeof EmailBodySchema>;
+export type EmailContent = z.infer<typeof EmailContentSchema>;
+export type EmailBody = z.infer<typeof EmailContentSchema>;
 export type EmailToSend = z.infer<typeof EmailToSendSchema>;
 export type EmailToDraft = z.infer<typeof EmailToDraftSchema>;
+export type EmailDraftDelete = z.infer<typeof EmailDraftDeleteSchema>;
 export type MailboxNamePath = z.infer<typeof MailboxNamePathSchema>;
 export type MailboxNamePathDepth = z.infer<typeof MailboxNamePathDepthSchema>;
 export type Mailbox = z.infer<typeof MailboxSchema>;

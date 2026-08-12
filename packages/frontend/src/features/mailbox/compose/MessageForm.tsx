@@ -251,11 +251,22 @@ const MessageForm = forwardRef<MessageFormHandle, MessageFormProps>(({ setCompos
 
             // By definition, you can't set blind CC from replying/forwarding
             const newSubject = updateMessageSubject(previousEmailToPrefill.subject, type);
-            const senderReplyEmailList = previousEmailToPrefill.replyTo.length !== 0 ? previousEmailToPrefill.replyTo : [previousEmailToPrefill.from];
+            const senderReplyEmailList = previousEmailToPrefill.replyTo ? (previousEmailToPrefill.replyTo.length !== 0 ? previousEmailToPrefill.replyTo : [previousEmailToPrefill.from]) : [previousEmailToPrefill.from];
             switch (type) {
-                default:
-                case 'forward':
                 case 'new':
+                    setTo(previousEmailToPrefill.to.map(recipient => ({ id: crypto.randomUUID(), valid: true, address: recipient.address })));
+                    const draftCcAddresses = previousEmailToPrefill.cc.map(sendee => ({ id: crypto.randomUUID(), valid: true, address: sendee.address }));
+                    setCc(draftCcAddresses);
+                    if (draftCcAddresses.length !== 0) {
+                        setShowCc(true);
+                    }
+                    const draftBccAddresses = previousEmailToPrefill.bcc.map(sendee => ({ id: crypto.randomUUID(), valid: true, address: sendee.address }));
+                    setBcc(draftBccAddresses);
+                    if (draftBccAddresses.length !== 0) {
+                        setShowBcc(true);
+                    }
+                    break;
+                case 'forward':
                     break;
                 case 'reply_all':
                     // Replying to all means replying to the sender + any others in the 'to' field (excluding ourselves)

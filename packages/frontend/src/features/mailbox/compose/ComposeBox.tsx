@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { glanceQueryKey } from "../glance/queryKeys";
 import { useMailboxStore } from "../../../store/mailboxStore";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { draftFingerprint } from "./draftFingerprint";
 
 export type NewEmailComposeType = 'new' | 'reply' | 'reply_all' | 'forward';
 
@@ -30,48 +31,68 @@ export default function ComposeBox() {
     const specialDraftFolderPath = useMailboxStore(state => state.specialDraftFolderPath);
     const setFormRef = useComposeEmailStore(state => state.setFormRef);
     const setEditorRef = useComposeEmailStore(state => state.setEditorRef);
-    const [draftUid, setDraftUid] = useState<undefined | number>(undefined);
+    const setDraftUid = useComposeEmailStore(state => state.setDraftUid);
+    const draftUid = useComposeEmailStore(state => state.draftUid);
+    const setDraftBaseline = useComposeEmailStore(state => state.setDraftBaseline);
+    const draftSaveQueueRef = useRef<Promise<boolean>>(Promise.resolve(true));
 
-    async function handleSavingDraft(): Promise<boolean> {
+    function buildDraftPayload(): EmailToDraft | null {
         const draft = formRef.current?.getDraft();
 
         if (!draft) {
-            return false;
+            return null;
         }
 
-        const emailToSaveToDrafts: EmailToDraft = {
+        return {
             from: { name: name, address: email },
             ...draft,
             replyTo: [{ name: name, address: email }],
             html: editorRef.current?.getHtml() ?? '',
+            text: editorRef.current?.getText() ?? '',
             draftFolder: specialDraftFolderPath
         };
+    }
 
-        const displaySubject = draft.subject.length === 0 ? "(No subject)" : draft.subject;
+    async function saveDraftPayload(
+        emailToSaveToDrafts: EmailToDraft,
+        draftUidOverride?: number,
+        backgroundSave = false
+    ): Promise<boolean> {
+        if (!backgroundSave && useComposeEmailStore.getState().hidden) {
+            return false;
+        }
+
+        const displaySubject = emailToSaveToDrafts.subject.length === 0 ? "(No subject)" : emailToSaveToDrafts.subject;
 
         setMessage(`Saving draft '${displaySubject}'...`, "loading");
 
+        const currentDraftUid = draftUidOverride ?? useComposeEmailStore.getState().draftUid;
+
+        if (!backgroundSave && useComposeEmailStore.getState().hidden) {
+            return false;
+        }
+
         let response;
-        if (draftUid === undefined) {
+        if (currentDraftUid === undefined) {
             response = await authFetch('/api/messages/draft', {
                 method: 'POST',
                 body: emailToSaveToDrafts
             })
         } else {
-            response = await authFetch(`/api/messages/draft/${encodeURIComponent(draftUid)}`, {
+            response = await authFetch(`/api/messages/draft/${encodeURIComponent(currentDraftUid)}`, {
                 method: 'PUT',
                 body: emailToSaveToDrafts
             })
         }
 
-
         if (response.ok) {
             setMessage(`Draft saved at ${new Date().toLocaleTimeString()}`, "success", 3000);
             const data = await response.json() as EmailUidResponse;
-            // Do not update unless we've created a new draft
-            if (draftUid === undefined && data.success) {
+            if (data.success && !useComposeEmailStore.getState().hidden) {
                 setDraftUid(Number(data.data.uid));
             }
+            setDraftBaseline(draftFingerprint(emailToSaveToDrafts));
+            queryClient.invalidateQueries({ queryKey: glanceQueryKey(specialDraftFolderPath) });
             return true;
         }
 
@@ -79,13 +100,45 @@ export default function ComposeBox() {
 
         return false;
     }
-    const debounceDraftSave = useDebounce(handleSavingDraft, 1000);
 
+    async function handleSavingDraft(): Promise<boolean> {
+        if (useComposeEmailStore.getState().hidden) {
+            return false;
+        }
 
-    function handleClosingComposeBox(event: React.MouseEvent<SVGSVGElement, MouseEvent>): void {
-        event.stopPropagation();
-        // Save draft - we want this to run immediately
-        debounceDraftSave(true); // `true` to override the debounce and force a save
+        const emailToSaveToDrafts = buildDraftPayload();
+
+        if (!emailToSaveToDrafts) {
+            return false;
+        }
+
+        return saveDraftPayload(emailToSaveToDrafts);
+    }
+
+    function queueDraftSave(
+        draftPayload?: EmailToDraft,
+        draftUidOverride?: number,
+        backgroundSave = false
+    ): Promise<boolean> {
+        const nextSave = draftSaveQueueRef.current
+            .catch(() => false)
+            .then(() => {
+                if (draftPayload) {
+                    return saveDraftPayload(draftPayload, draftUidOverride, backgroundSave);
+                }
+                return handleSavingDraft();
+            });
+        draftSaveQueueRef.current = nextSave;
+        return nextSave;
+    }
+
+    function hasUnsavedDraftChanges(draftPayload: EmailToDraft): boolean {
+        return draftFingerprint(draftPayload) !== useComposeEmailStore.getState().draftBaseline;
+    }
+
+    const [debounceDraftSave, cancelDebouncedDraftSave] = useDebounce(queueDraftSave, 2000);
+
+    function resetComposeBox(): void {
         setHidden(true);
         setMinimized(false);
         setFullScreen(false);
@@ -93,41 +146,58 @@ export default function ComposeBox() {
         formRef.current?.clearDraft();
         editorRef.current?.clearEditor();
         setDraftUid(undefined);
+        setDraftBaseline("");
+    }
+
+    function handleClosingComposeBox(event: React.MouseEvent<SVGSVGElement, MouseEvent>): void {
+        event.stopPropagation();
+        cancelDebouncedDraftSave();
+        const draftPayload = buildDraftPayload();
+        const draftUidToSave = useComposeEmailStore.getState().draftUid;
+        resetComposeBox();
+        if (draftPayload && hasUnsavedDraftChanges(draftPayload)) {
+            void queueDraftSave(draftPayload, draftUidToSave, true);
+        }
     }
 
     async function handleSend(): Promise<boolean> {
-        // TODO: Handle the UI/prompt the user when the user forgets to add stuff like a recipient, subject
+        cancelDebouncedDraftSave();
+
         const draft = formRef.current?.getDraft();
 
         if (!draft) {
             return false;
         }
 
+        const draftUidToDelete = useComposeEmailStore.getState().draftUid;
+
         const emailToSend: EmailToSend = {
             from: { name: name, address: email },
             ...draft,
             replyTo: [{ name: name, address: email }],
             html: editorRef.current?.getHtml() ?? '',
+            text: editorRef.current?.getText() ?? '',
             sentFolder: sentPath
         };
 
         setMessage(`Sending message '${draft.subject}'...`, "loading");
 
-        // Backend call to send here
         const response = await authFetch('/api/messages/send', {
             method: 'POST',
             body: emailToSend
         })
 
         if (response.ok) {
-            setHidden(true);
-            setMinimized(false);
-            setFullScreen(false);
-            setComposeBoxTitle("New message");
+            resetComposeBox();
 
-            // Clear the content of the email after it's been sent
-            formRef.current?.clearDraft();
-            editorRef.current?.clearEditor();
+            if (draftUidToDelete !== undefined) {
+                void authFetch(`/api/messages/draft/${encodeURIComponent(draftUidToDelete)}`, {
+                    method: 'DELETE',
+                    body: { draftFolder: specialDraftFolderPath }
+                }).then(() => {
+                    queryClient.invalidateQueries({ queryKey: glanceQueryKey(specialDraftFolderPath) });
+                });
+            }
 
             setMessage("Message sent!", "success", 3000);
 
@@ -152,19 +222,30 @@ export default function ComposeBox() {
         setEditorRef(editorRef.current);
     }, []);
 
+    useEffect(() => {
+        if (hidden || draftUid !== undefined) {
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            const payload = buildDraftPayload();
+            setDraftBaseline(payload ? draftFingerprint(payload) : "");
+        });
+    }, [hidden, draftUid]);
+
     return (
         <section
             className={[
                 hidden ? "hidden" : "flex",
-                "fixed inset-0 z-50 flex-col h-dvh w-full overflow-hidden",
+                "fixed inset-0 z-50 flex-col h-dvh w-full",
                 "md:inset-auto md:bottom-0 md:right-4",
                 "bg-kiwi-white text-kiwi-black shadow-2xl border border-kiwi-middle-grey",
-                "md:rounded-t-2xl transition-all duration-300 ease-out",
+                "rounded-t-2xl transition-all duration-300 ease-out",
                 // desktop size state
                 fullScreen ? "md:inset-2 md:bottom-2 md:right-2 md:h-[calc(100dvh-1rem)] md:w-[calc(100vw-1rem)] md:left-2" : minimized ? "md:h-11 md:w-160" : "md:h-160 md:w-160", "md:max-h-full md:max-w-full",].join(" ")}
         >
             <header
-                className="flex h-11 shrink-0 items-center justify-between bg-kiwi-light-grey px-3 cursor-pointer"
+                className="flex h-11 shrink-0 items-center justify-between bg-kiwi-light-grey px-3 rounded-t-2xl cursor-pointer"
                 onClick={() => minimized && setMinimized(false)}
             >
                 <span className="truncate text-sm font-semibold">{composeBoxTitle}</span>
@@ -191,9 +272,9 @@ export default function ComposeBox() {
                     />
                 </div>
             </header>
-            <span className="flex flex-col flex-1" onInput={debounceDraftSave}>
+            <span className="flex flex-col flex-1 overflow-y-scroll no-scrollbar" onInput={() => { debounceDraftSave(); }}>
                 <MessageForm setComposeBoxTitle={setComposeBoxTitle} ref={formRef} />
-                <div className={minimized ? "invisible" : "flex min-h-0 flex-1 flex-col overflow-y-auto p-4"}>
+                <div className={minimized ? "invisible" : "flex min-h-0 flex-1 flex-col p-4"}>
                     <EmailEditor ref={editorRef} />
                 </div>
             </span>

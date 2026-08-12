@@ -7,7 +7,7 @@
  * sentinel when the item is near the bottom of the already-loaded set.
  */
 
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useContext, useEffect, useRef, type MouseEvent } from "react";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { Trash2 } from "lucide-react";
@@ -17,6 +17,11 @@ import { useOnScreen } from "../../../hooks/useOnScreen";
 import { useSelectedEmailStore } from "../../../store/selectedEmailStore";
 import { useMessageFlagsMutation } from "./useMessageFlagsMutation";
 import { useMessageMoveMutation } from "./useMessageMoveMutation";
+import { useComposeEmailStore } from "../../../store/composeEmailStore";
+import { AuthContext } from "../../../auth/AuthContext";
+import { fetchSingleMessage } from "../../../api/messages";
+import { useToastStore } from "../../../store/toastStore";
+import { draftFingerprint } from "../compose/draftFingerprint";
 
 interface GlanceItemProps {
     emailGlance: EmailGlance;
@@ -35,6 +40,13 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
     const openEmail = useSelectedEmailStore(state => state.selected);
     const flagsMutation = useMessageFlagsMutation({ mailboxPath: emailGlance.mailboxPath });
     const moveMutation = useMessageMoveMutation();
+    const { authFetch } = useContext(AuthContext);
+    const setToastMessage = useToastStore(state => state.setMessage);
+    const formRef = useComposeEmailStore(state => state.formRef);
+    const editorRef = useComposeEmailStore(state => state.editorRef);
+    const setHidden = useComposeEmailStore(state => state.setHidden);
+    const setDraftUid = useComposeEmailStore(state => state.setDraftUid);
+    const setDraftBaseline = useComposeEmailStore(state => state.setDraftBaseline);
 
     const isRead = emailGlance.flags.seen;
     const isStarred = emailGlance.flags.flagged;
@@ -54,10 +66,33 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
         }
     }, [isVisible, isFetchTrigger, onFetchTriggered]);
 
-    const handleRowClick = () => {
+    const handleRowClick = async () => {
         if (!isRead) {
             flagsMutation.mutate({ uniqueIds: [emailGlance.uniqueId], flagsToAdd: [SEEN_FLAG], flagsToRemove: [] });
         }
+
+        // Open up in the compose box with the draft selected
+        if (isDraftsMailbox) {
+            setHidden(true); // Helps with the UX, they know a new one is loading
+            setDraftUid(emailGlance.uniqueId);
+
+            try {
+                setToastMessage("Opening draft", "loading");
+                const draft = await fetchSingleMessage({
+                    authFetch,
+                    mailboxPath: emailGlance.mailboxPath,
+                    uniqueId: emailGlance.uniqueId
+                });
+                formRef?.setDraft(draft, "new");
+                editorRef?.setEditor(draft, "new");
+                setDraftBaseline(draftFingerprint(draft));
+            } catch {
+                setToastMessage("Failed to open draft", "error", 3000);
+            }
+            setHidden(false);
+            return;
+        }
+
         selectEmail(emailGlance.uniqueId, emailGlance.mailboxPath);
     };
 
@@ -97,7 +132,7 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
 
     // Unread rows carry a green left edge and a raised background; checked
     // rows get a full green border so a bulk selection is scannable at a
-    // glance; the row of the currently open email stays highlighted.
+    // glance; the row of the currently open email stays highlighted
     const rowState = isChecked
         ? "border-kiwi-green/60 bg-kiwi-middle-black"
         : isOpen
@@ -158,8 +193,9 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
                     </div>
                 </div>
 
-                <div className="w-full mt-0.5">
+                <div className="flex flex-row justify-between w-full mt-0.5">
                     <p className={`text-sm truncate ${subjectStyle}`}>{emailGlance.subject}</p>
+                    {isDraftsMailbox && <p className="text-sm truncate font-normal text-kiwi-failure">Draft</p>}
                 </div>
             </div>
         </div>

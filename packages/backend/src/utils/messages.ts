@@ -93,8 +93,9 @@ export function decodeMailboxPath(rawMailboxPath: string | string[] | undefined)
     return decodeURIComponent(rawMailboxPath);
 }
 
-export function decodeUid(uid: number): number | null {
-    return typeof uid === "string" && Number(uid) >= 0 ? Number(uid) : null;
+export function decodeUid(uid: string | number): number | null {
+    const parsedUid = typeof uid === "string" ? Number(uid) : uid;
+    return Number.isFinite(parsedUid) && parsedUid >= 0 ? parsedUid : null;
 }
 
 export async function handleRequestAndLogin(request: Request<{}, {}, EmailToDraft | EmailToSend>, response: Response<EmailUidResponse>, schema: typeof EmailToDraftSchema | typeof EmailToSendSchema) {

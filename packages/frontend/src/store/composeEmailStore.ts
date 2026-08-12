@@ -9,6 +9,10 @@ interface ComposeEmailStore {
     setFormRef: (ref: MessageFormHandle | null) => void;
     editorRef: EmailEditorHandle | null;
     setEditorRef: (ref: EmailEditorHandle | null) => void;
+    draftUid: number | undefined;
+    setDraftUid: (uid: number | undefined) => void;
+    draftBaseline: string;
+    setDraftBaseline: (baseline: string) => void;
 }
 
 export const useComposeEmailStore = create<ComposeEmailStore>((set) => ({
@@ -17,5 +21,9 @@ export const useComposeEmailStore = create<ComposeEmailStore>((set) => ({
     formRef: null,
     setFormRef: ref => set({ formRef: ref }),
     editorRef: null,
-    setEditorRef: ref => set({ editorRef: ref })
+    setEditorRef: ref => set({ editorRef: ref }),
+    draftUid: undefined,
+    setDraftUid: uid => set({ draftUid: uid }),
+    draftBaseline: "",
+    setDraftBaseline: baseline => set({ draftBaseline: baseline })
 }));
