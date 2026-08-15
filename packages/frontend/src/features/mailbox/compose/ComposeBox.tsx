@@ -39,7 +39,7 @@ export default function ComposeBox() {
     function buildDraftPayload(): EmailToDraft | null {
         const draft = formRef.current?.getDraft();
 
-        if (!draft) {
+        if (!draft || (draft?.subject.length === 0 && draft.to.length === 0 && draft?.cc.length === 0 && draft.bcc.length === 0)) {
             return null;
         }
 
@@ -53,11 +53,7 @@ export default function ComposeBox() {
         };
     }
 
-    async function saveDraftPayload(
-        emailToSaveToDrafts: EmailToDraft,
-        draftUidOverride?: number,
-        backgroundSave = false
-    ): Promise<boolean> {
+    async function saveDraftPayload(emailToSaveToDrafts: EmailToDraft, draftUidOverride?: number, backgroundSave = false): Promise<boolean> {
         if (!backgroundSave && useComposeEmailStore.getState().hidden) {
             return false;
         }
@@ -90,6 +86,7 @@ export default function ComposeBox() {
             const data = await response.json() as EmailUidResponse;
             if (data.success && !useComposeEmailStore.getState().hidden) {
                 setDraftUid(Number(data.data.uid));
+                // Now we can update the URL using the unique ID
             }
             setDraftBaseline(draftFingerprint(emailToSaveToDrafts));
             queryClient.invalidateQueries({ queryKey: glanceQueryKey(specialDraftFolderPath) });
@@ -115,11 +112,7 @@ export default function ComposeBox() {
         return saveDraftPayload(emailToSaveToDrafts);
     }
 
-    function queueDraftSave(
-        draftPayload?: EmailToDraft,
-        draftUidOverride?: number,
-        backgroundSave = false
-    ): Promise<boolean> {
+    function queueDraftSave(draftPayload?: EmailToDraft, draftUidOverride?: number, backgroundSave = false): Promise<boolean> {
         const nextSave = draftSaveQueueRef.current
             .catch(() => false)
             .then(() => {
@@ -156,7 +149,7 @@ export default function ComposeBox() {
         const draftUidToSave = useComposeEmailStore.getState().draftUid;
         resetComposeBox();
         if (draftPayload && hasUnsavedDraftChanges(draftPayload)) {
-            void queueDraftSave(draftPayload, draftUidToSave, true);
+            queueDraftSave(draftPayload, draftUidToSave, true);
         }
     }
 
