@@ -20,11 +20,15 @@ import { getEnv } from "./auth_sessions.js";
 
 const DEFAULT_PORT = 3001;
 const PORT = Number(process.env.PORT) || DEFAULT_PORT;
-const ALLOWED_ORIGINS: string[] = getEnv("CORS_ORIGINS")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
 
+let ALLOWED_ORIGINS: string[] = getEnv('CORS_ORIGINS')
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter((origin) => origin.length > 0);
+
+if (getEnv('NODE_ENV') === 'development') {
+	ALLOWED_ORIGINS = ALLOWED_ORIGINS.concat(['http://192.168.1.20:5173']);
+}
 const app = express();
 app.set("trust proxy", 1); // Trust first hop (the local reverse proxy)
 app.use(helmet());
