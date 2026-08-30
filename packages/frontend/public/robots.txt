@@ -4,6 +4,7 @@ Allow: /terms-of-service
 Allow: /privacy-policy
 Allow: /login
 Disallow: /mail
+Disallow: /mail/*
 Disallow: /unsubscribe
 Disallow: /unsubscribe-failed
 Disallow: /api/

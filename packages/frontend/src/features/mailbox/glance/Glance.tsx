@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import type { GlancePage } from "@KiwiClient/shared";
 import { AuthContext } from "../../../auth/AuthContext";
@@ -21,6 +22,7 @@ import { GlanceToolbar } from "./GlanceToolbar";
 import { glanceQueryKey } from "./queryKeys";
 import { useSelectedGlanceItems } from "./useSelectedGlanceItems";
 import { mailboxesQueryKey } from "../queryKeys";
+import { mailPathToUrl } from "../mailboxRouting";
 
 const PAGE_SIZE = 25;
 
@@ -31,6 +33,7 @@ interface GlanceProps {
 
 export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: GlanceProps) {
     const { authFetch } = useContext(AuthContext);
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const setToastMessage = useToastStore(state => state.setMessage);
     const selection = useSelectedGlanceItems();
@@ -114,10 +117,10 @@ export function Glance({ selectedMailbox, specialTrashFolderPath = undefined }: 
         const nextEmail = nextBelow ?? nextAbove;
 
         if (nextEmail) {
-            useSelectedEmailStore.getState().select(nextEmail.uniqueId, nextEmail.mailboxPath);
+            navigate(mailPathToUrl(nextEmail.mailboxPath, nextEmail.uniqueId));
             return;
         }
-        useSelectedEmailStore.getState().clear();
+        navigate(mailPathToUrl(selectedMailbox.path));
     };
 
     return (

@@ -133,7 +133,7 @@ function RecipientsRow({ id, label, value, onChange, rightSlot, inputRef }: Reci
                     data-lpignore="true"
                     data-bwignore
                     className="min-w-24 flex-1 bg-transparent text-base md:text-sm leading-6 outline-none placeholder:text-kiwi-middle-grey"
-                    placeholder={value.length === 0 ? 'name@example.com' : ''}
+                    placeholder={value.length === 0 ? 'you@yourdomain.com' : ''}
                 />
             </div>
             {rightSlot ? <div className="mt-1 shrink-0">{rightSlot}</div> : null}

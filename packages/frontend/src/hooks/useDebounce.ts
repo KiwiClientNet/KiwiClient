@@ -2,10 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 type DebouncedFunction<T extends (...args: any[]) => any> = (...args: Parameters<T>) => ReturnType<T> | void;
 
-export function useDebounce<T extends (...args: any[]) => any>(
-    callback: T,
-    delayMilliseconds: number
-): [DebouncedFunction<T>, () => void] {
+export function useDebounce<T extends (...args: any[]) => any>(callback: T, delayMilliseconds: number): [DebouncedFunction<T>, () => void] {
     const callbackRef = useRef(callback);
     const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 

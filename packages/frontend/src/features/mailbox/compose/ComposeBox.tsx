@@ -13,6 +13,7 @@ import { glanceQueryKey } from "../glance/queryKeys";
 import { useMailboxStore } from "../../../store/mailboxStore";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { draftFingerprint } from "./draftFingerprint";
+import { useNavigate } from "react-router-dom";
 
 export type NewEmailComposeType = 'new' | 'reply' | 'reply_all' | 'forward';
 
@@ -35,11 +36,12 @@ export default function ComposeBox() {
     const draftUid = useComposeEmailStore(state => state.draftUid);
     const setDraftBaseline = useComposeEmailStore(state => state.setDraftBaseline);
     const draftSaveQueueRef = useRef<Promise<boolean>>(Promise.resolve(true));
+    const navigate = useNavigate();
 
     function buildDraftPayload(): EmailToDraft | null {
         const draft = formRef.current?.getDraft();
 
-        if (!draft || (draft?.subject.length === 0 && draft.to.length === 0 && draft?.cc.length === 0 && draft.bcc.length === 0)) {
+        if (!draft || (draft.subject.length === 0 && draft.to.length === 0 && draft.cc.length === 0 && draft.bcc.length === 0)) {
             return null;
         }
 
@@ -85,8 +87,10 @@ export default function ComposeBox() {
             setMessage(`Draft saved at ${new Date().toLocaleTimeString()}`, "success", 3000);
             const data = await response.json() as EmailUidResponse;
             if (data.success && !useComposeEmailStore.getState().hidden) {
-                setDraftUid(Number(data.data.uid));
                 // Now we can update the URL using the unique ID
+                const localDraftUid = Number(data.data.uid);
+                setDraftUid(localDraftUid);
+                navigate({ search: `?compose=${localDraftUid}` }, { replace: true });
             }
             setDraftBaseline(draftFingerprint(emailToSaveToDrafts));
             queryClient.invalidateQueries({ queryKey: glanceQueryKey(specialDraftFolderPath) });
@@ -126,6 +130,9 @@ export default function ComposeBox() {
     }
 
     function hasUnsavedDraftChanges(draftPayload: EmailToDraft): boolean {
+        console.log(`Draft fingerprint passed in ${draftFingerprint(draftPayload)}`);
+        console.log(`Draft fingerprint baseline ${useComposeEmailStore.getState().draftBaseline}`);
+        console.log(draftFingerprint(draftPayload) !== useComposeEmailStore.getState().draftBaseline);
         return draftFingerprint(draftPayload) !== useComposeEmailStore.getState().draftBaseline;
     }
 
@@ -147,10 +154,11 @@ export default function ComposeBox() {
         cancelDebouncedDraftSave();
         const draftPayload = buildDraftPayload();
         const draftUidToSave = useComposeEmailStore.getState().draftUid;
-        resetComposeBox();
+        navigate({ search: '' });
         if (draftPayload && hasUnsavedDraftChanges(draftPayload)) {
             queueDraftSave(draftPayload, draftUidToSave, true);
         }
+        resetComposeBox();
     }
 
     async function handleSend(): Promise<boolean> {

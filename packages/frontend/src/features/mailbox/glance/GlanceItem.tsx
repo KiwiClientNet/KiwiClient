@@ -14,6 +14,8 @@ import { Trash2 } from "lucide-react";
 import { SEEN_FLAG, FLAGGED_FLAG, type EmailGlance } from "@KiwiClient/shared";
 import { Checkbox } from "../../../components/Checkbox";
 import { useOnScreen } from "../../../hooks/useOnScreen";
+import { useNavigate } from "react-router-dom";
+import { mailPathToUrl } from "../mailboxRouting";
 import { useSelectedEmailStore } from "../../../store/selectedEmailStore";
 import { useMessageFlagsMutation } from "./useMessageFlagsMutation";
 import { useMessageMoveMutation } from "./useMessageMoveMutation";
@@ -36,7 +38,7 @@ interface GlanceItemProps {
 export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigger, onFetchTriggered, specialTrashFolderPath = undefined, onEmailsRemoved = undefined }: GlanceItemProps) {
     const referenceObject = useRef<HTMLDivElement>(null);
     const isVisible = useOnScreen(referenceObject);
-    const selectEmail = useSelectedEmailStore(state => state.select);
+    const navigate = useNavigate();
     const openEmail = useSelectedEmailStore(state => state.selected);
     const flagsMutation = useMessageFlagsMutation({ mailboxPath: emailGlance.mailboxPath });
     const moveMutation = useMessageMoveMutation();
@@ -75,6 +77,7 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
         if (isDraftsMailbox) {
             setHidden(true); // Helps with the UX, they know a new one is loading
             setDraftUid(emailGlance.uniqueId);
+            navigate({ search: `?compose=${emailGlance.uniqueId}` });
 
             try {
                 setToastMessage("Opening draft", "loading");
@@ -93,7 +96,7 @@ export function GlanceItem({ emailGlance, isChecked, onToggleCheck, isFetchTrigg
             return;
         }
 
-        selectEmail(emailGlance.uniqueId, emailGlance.mailboxPath);
+        navigate(mailPathToUrl(emailGlance.mailboxPath, emailGlance.uniqueId));
     };
 
     const handleStarClick = (event: MouseEvent<HTMLButtonElement>) => {

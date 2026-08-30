@@ -58,7 +58,7 @@ export default function LandingSignup({ setOutcome }: LandingSignupProps) {
                 type="email"
                 id="email"
                 name="email"
-                placeholder="you@example.com"
+                placeholder="you@yourdomain.com"
                 aria-label="Email address"
                 required
                 disabled={isDisabled}

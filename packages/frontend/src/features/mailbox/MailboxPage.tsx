@@ -25,8 +25,8 @@ import { useComposeEmailStore } from "../../store/composeEmailStore";
 import { useMailboxStore } from "../../store/mailboxStore";
 import { WelcomeMessage } from "./emailbox/WelcomeMessage";
 import type { MailboxNamePathDepth } from "@KiwiClient/shared";
-import { Navigate, useParams } from "react-router-dom";
-import { findMailboxBySlug, mailboxPathToSlug } from "./mailboxRouting";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { findMailboxBySlug, mailPathToUrl, mailboxPathToSlug, parseMailRoute } from "./mailboxRouting";
 
 /**
  * @brief Picks a sensible default selection from the freshly-fetched tree.
@@ -93,13 +93,19 @@ export function MailboxPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [mobileView, setMobileView] = useState<"glance" | "email">("glance");
     const selectedEmail = useSelectedEmailStore(state => state.selected);
+    const selectEmail = useSelectedEmailStore(state => state.select);
     const clearSelectedEmail = useSelectedEmailStore(state => state.clear);
+    const navigate = useNavigate();
     const [specialTrashFolderPath, setSpecialTrashFolderPath] = useState<undefined | string>(undefined); // TODO: Probably should update this to use with zustand too
     const setSentPath = useMailboxStore(state => state.setSentPath);
     const setHidden = useComposeEmailStore(state => state.setHidden);
     const setPossibleMailboxPathsDestinations = useMailboxStore(state => state.setPossibleMailboxDestinations);
     const setSpecialDraftFolderPath = useMailboxStore(state => state.setSpecialDraftFolderPath);
-    const { "*": mailboxSlug } = useParams();
+
+    const { "*": mailSplat } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { mailboxSlug, messageId } = parseMailRoute(mailSplat);
+
     const { data: mailboxTree = [], error, isPending } = useQuery({
         queryKey: mailboxesQueryKey(),
         queryFn: ({ signal }) => fetchMailboxes(authFetch, signal),
@@ -124,21 +130,34 @@ export function MailboxPage() {
     }, [moveDestiinations]);
 
     useEffect(() => {
-        if (selectedEmail) {
-            setMobileView("email");
+        if (!selectedMailbox) {
+            return;
         }
-    }, [selectedEmail]);
+
+        if (messageId === null) {
+            clearSelectedEmail();
+            setMobileView("glance");
+            return;
+        }
+
+        selectEmail(messageId, selectedMailbox.path);
+        setMobileView("email");
+    }, [selectedMailbox, messageId, selectEmail, clearSelectedEmail]);
 
     const handleSelectMailbox = () => {
-        clearSelectedEmail();
         setIsSidebarOpen(false);
         setMobileView("glance");
     };
 
     const handleBackToGlance = () => {
-        clearSelectedEmail();
         setMobileView("glance");
+        navigate(mailPathToUrl(selectedMailbox!.path));
     };
+
+    const composeValue = searchParams.get("compose");
+    if (composeValue === "new") {
+        setHidden(false);
+    }
 
     if (isPending) {
         return <MailboxPageLoading Status={<StatusComponent message="loading..." status="loading" />} />;
@@ -221,7 +240,7 @@ export function MailboxPage() {
                     </button>
                 )}
                 <div className="hidden md:block">
-                {/* <div className={`${mobileView === "email" ? "hidden" : "block"} lg:block`}> */}
+                    {/* <div className={`${mobileView === "email" ? "hidden" : "block"} lg:block`}> */}
                     <StatusBar />
                 </div>
                 <ComposeBox />

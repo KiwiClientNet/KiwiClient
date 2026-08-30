@@ -15,6 +15,7 @@ import { SidebarItem } from "./SidebarItem";
 import { useComposeEmailStore } from "../../../store/composeEmailStore";
 import Logo from "../../../components/Logo";
 import { UserMenu } from "../statusbar/UserMenu";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
     mailboxTree: MailboxTreeNode[];
@@ -26,6 +27,11 @@ interface SidebarProps {
 
 export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isOpen, onClose }: SidebarProps) {
     const setHidden = useComposeEmailStore(state => state.setHidden);
+    const navigate = useNavigate();
+    function handleNewMessageButtonClick() {
+        navigate({ search: '?compose=new' });
+        setHidden(false);
+    }
 
     return (
         <>
@@ -63,7 +69,7 @@ export function Sidebar({ mailboxTree, selectedMailboxPath, onSelectMailbox, isO
                 </div>
 
                 <div className="pl-3 pr-1 pb-2 hidden md:block">
-                    <Button text="New Message" title="Compose a new email" reverseColours={true} onClickFunction={() => setHidden(false)} />
+                    <Button text="New Message" title="Compose a new email" reverseColours={true} onClickFunction={handleNewMessageButtonClick} />
                 </div>
 
                 <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
